@@ -1,0 +1,44 @@
+name: build
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+              clang libbfd-dev libcap-dev libelf-dev python3-docutils
+
+      - name: Build bpftool
+        run: |
+          make -j -C src
+          ./src/bpftool 2>&1 | grep -q Usage
+          ./src/bpftool -p version | \
+              tee /dev/stderr | \
+              jq --exit-status '.features | .libbfd and .libbpf_strict'
+
+      - name: Build bpftool, with clang
+        run: |
+          make -C src clean
+          LLVM=1 make -j -C src
+          ./src/bpftool 2>&1 | grep -q Usage
+          ./src/bpftool -p version | \
+              tee /dev/stderr | \
+              jq --exit-status '.features | .libbfd and .libbpf_strict'
+
+      - name: Build bpftool's documentation
+        run: |
+          make -j -C docs
+          grep -q ".TH BPFTOOL 8" ./docs/bpftool.8

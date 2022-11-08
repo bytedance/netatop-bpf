@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "string_view": "c",
+        "bpf_helpers.h": "c",
+        "vmlinux.h": "c",
+        "vmlinux_516.h": "c",
+        "vmlinux_508.h": "c",
+        "array": "c",
+        "string": "c"
+    }
+}
