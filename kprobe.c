@@ -26,6 +26,14 @@ static void sig_int(int signo)
 	stop = 1;
 }
 
+struct task_net_stat value_zero = {
+	.net_tcp_rx = 0,
+	.net_tcp_rx_bytes = 0,
+	.net_tcp_tx = 0,
+	.net_tcp_tx_bytes = 0,
+	.net_udp_rx = 0
+};
+
 int main(int argc, char **argv)
 {
 	struct kprobe_bpf *skel;
@@ -62,12 +70,13 @@ int main(int argc, char **argv)
 
 	// int tasks_fd= bpf_map__fd(skel->obj->map.task_net_stat);
 	int tasks_fd = bpf_object__find_map_fd_by_name(skel->obj, "tasks_net_stat");
-	printf("%d", tasks_fd);
 	struct task_net_stat *stats = calloc(nr_cpus, sizeof(struct task_net_stat));
-	// if (!stats) {
-	// 	fprintf(stderr, "%lu calloc cgroup_net_stat failed\n", pid);
-	// 	return -ENOMEM;
-	// }
+	if (!stats) {
+		fprintf(stderr, "calloc task_net_stat failed\n");
+		return -ENOMEM;
+	}
+	// if ( chdir("/proc") == -1)
+	// 	return -1;
 	while (!stop) {
 		fprintf(stderr, ".");
 		unsigned long long lookup_key, next_key;
@@ -81,6 +90,7 @@ int main(int argc, char **argv)
 		while(bpf_map_get_next_key(tasks_fd, &lookup_key, &next_key) == 0) {
 			bpf_map_lookup_elem(tasks_fd, &next_key, stats);
 			// printf("%-6d %-16lld %-6lld %-16lld %-6lld\n", next_key.pid, task_count_process.tcprcvpacks, task_count_process.tcprcvbytes, task_count_process.udprcvpacks, task_count_process.udprcvbytes);
+
 			lookup_key = next_key;
 			struct task_net_stat data = {
 				.net_tcp_rx = 0,
@@ -89,6 +99,10 @@ int main(int argc, char **argv)
 				.net_tcp_tx_bytes = 0,
 				.net_udp_rx = 0
 			};
+			
+			// bpf_map_update_elem(tasks_fd, &next_key, &value_zero, BPF_EXIST);
+			// if (next_key == 522878)
+			// 	printf("%llu %ld %ld %ld %ld %ld\n",next_key, value_zero.net_tcp_rx);
 
 			for (int i = 0; i < nr_cpus; i++) {
 				data.net_tcp_rx += stats[i].net_tcp_rx;
@@ -100,10 +114,12 @@ int main(int argc, char **argv)
 				data.net_udp_tx += stats[i].net_udp_tx;
 				data.net_udp_tx_bytes += stats[i].net_udp_tx_bytes;
 			}
-			printf("%llu %ld %ld %ld %ld %ld\n",next_key, data.net_tcp_rx, data.net_tcp_rx_bytes, data.net_tcp_tx, data.net_tcp_tx_bytes, data.net_udp_rx);
-			
+			if (next_key == 554670)
+				printf("%llu %ld %ld %ld %ld %ld\n",next_key, data.net_tcp_rx, data.net_tcp_rx_bytes, data.net_tcp_tx, data.net_tcp_tx_bytes, data.net_udp_rx);
+			if(kill(next_key, 0) && errno == ESRCH) 
+				bpf_map_delete_elem(tasks_fd, &next_key);
 		}
-		sleep(10);
+		sleep(1);
 	}
 	// while (!stop) {
 	// 	fprintf(stderr, ".");
