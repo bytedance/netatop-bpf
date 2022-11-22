@@ -14,7 +14,7 @@ struct {
 	__uint(type, BPF_MAP_TYPE_PERCPU_HASH);
 	__uint(max_entries, TASK_MAX_ENTRIES);
 	__type(key, u64);
-	__type(value, struct task_net_stat);
+	__type(value, struct taskcount);
 } tasks_net_stat SEC(".maps");
 
 static __always_inline u64 current_net_stat()
@@ -27,7 +27,7 @@ static __always_inline u64 current_net_stat()
 SEC("raw_tracepoint/udp_send_length")
 int BPF_PROG(udp_send_length_k, struct sock *sk, int length, int error, int flags)
 {
-	struct task_net_stat *stat;
+	struct taskcount *stat;
 
 	if (error != 0)
 		return 0;
@@ -38,7 +38,7 @@ int BPF_PROG(udp_send_length_k, struct sock *sk, int length, int error, int flag
 		stat->net_udp_tx++;
 		stat->net_udp_tx_bytes += length;
 	} else {
-		struct task_net_stat data ={
+		struct taskcount data ={
 			.net_udp_tx = 1,
 			.net_udp_tx_bytes = length
 		};
@@ -51,7 +51,7 @@ int BPF_PROG(udp_send_length_k, struct sock *sk, int length, int error, int flag
 SEC("raw_tracepoint/udp_recv_length")
 int BPF_PROG(udp_recv_length_k, struct sock *sk, int length, int error, int flags)
 {
-	struct task_net_stat *stat;
+	struct taskcount *stat;
 
 	if (error != 0)
 		return 0;
@@ -62,7 +62,7 @@ int BPF_PROG(udp_recv_length_k, struct sock *sk, int length, int error, int flag
 		stat->net_udp_rx++;
 		stat->net_udp_rx_bytes += length;
 	} else {
-		struct task_net_stat data ={
+		struct taskcount data ={
 			.net_udp_rx = 1,
 			.net_udp_rx_bytes = length
 		};
@@ -75,7 +75,7 @@ int BPF_PROG(udp_recv_length_k, struct sock *sk, int length, int error, int flag
 SEC("raw_tracepoint/tcp_send_length")
 int BPF_PROG(tcp_send_length_k, struct sock *sk, int length, int error, int flags)
 {
-	struct task_net_stat *stat;
+	struct taskcount *stat;
 	int id;
 
 	if (error != 0)
@@ -87,7 +87,7 @@ int BPF_PROG(tcp_send_length_k, struct sock *sk, int length, int error, int flag
 		stat->net_tcp_tx++;
 		stat->net_tcp_tx_bytes += length;
 	} else {
-		struct task_net_stat data ={
+		struct taskcount data ={
 			.net_tcp_rx = 1,
 			.net_tcp_rx_bytes = length
 		};
@@ -100,7 +100,7 @@ int BPF_PROG(tcp_send_length_k, struct sock *sk, int length, int error, int flag
 SEC("raw_tracepoint/tcp_recv_length")
 int BPF_PROG(tcp_recv_length_k, void *sk, int length, int error, int flags)
 {
-	struct task_net_stat *stat;
+	struct taskcount *stat;
 	int id;
 
 	if (error != 0)
@@ -119,7 +119,7 @@ int BPF_PROG(tcp_recv_length_k, void *sk, int length, int error, int flags)
 		stat->net_tcp_rx_bytes += length;
 		// bpf_printk("current_net_stattttttttt %d %d\n", stat->net_tcp_rx, stat->net_tcp_rx_bytes);
 	} else {
-		struct task_net_stat data ={
+		struct taskcount data ={
 			.net_tcp_rx = 1,
 			.net_tcp_rx_bytes = length
 		};
