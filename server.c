@@ -23,6 +23,8 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include "server.h"
+#include "netatop.h"
+#include "deal.h"
 
 /*
 * Create a server endpoint of a connection.
@@ -83,13 +85,17 @@ void serv_listen()
             }
             else if (events[i].events & EPOLLIN)
             {
-			    printf("recv ing\n");
-			   char recv_t[100];
-               int n = recv(events[i].data.fd, recv_t, 100, 0);
-               send(events[i].data.fd, recv_t, sizeof(recv_t), 0);
-			   if (n == 0)
-			   		close(events[i].data.fd);
-			   printf("%s\n", recv_t);
+			    // printf("recv ing\n");
+                // recv_pack(events[i].data.fd);
+                struct netpertask npt;
+                int n = recv(events[i].data.fd, &npt, sizeof(npt), 0);
+                deal(&npt);
+                send(events[i].data.fd, &npt, sizeof(npt), 0);
+                // printf("%d %llu %ld %ld %ld %ld\n", npt.id, npt.tc.tcpsndpacks, npt.tc.tcpsndbytes, npt.tc.tcprcvpacks, npt.tc.tcprcvbytes, npt.tc.udpsndpacks);
+
+                // if (n == 0)
+                //     close(events[i].data.fd);
+                // printf("%s\n", recv_t);
                // recv_t.data.send_fd = events[i].data.fd;
             }
         }

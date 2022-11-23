@@ -12,8 +12,9 @@
 #include <sys/resource.h>
 #include <bpf/libbpf.h>
 #include "kprobe.skel.h"
-#include "kprobe.h"
+#include "netatop.h"
 #include "server.h"
+#include "deal.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -55,18 +56,18 @@ static void sig_int(int signo)
 }
 
 struct taskcount value_zero = {
-	.net_tcp_rx = 0,
-	.net_tcp_rx_bytes = 0,
-	.net_tcp_tx = 0,
-	.net_tcp_tx_bytes = 0,
-	.net_udp_rx = 0
+	.tcpsndpacks = 0,
+	.tcpsndbytes = 0,
+	.tcprcvpacks = 0,
+	.tcprcvbytes = 0,
+	.udpsndpacks = 0
 };
 
 int main(int argc, char **argv)
 {
 	struct kprobe_bpf *skel;
 	int err;
-	int nr_cpus = libbpf_num_possible_cpus();
+	nr_cpus = libbpf_num_possible_cpus();
 
 	libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
 	/* Set up libbpf errors and debug info callback */
@@ -96,78 +97,81 @@ int main(int argc, char **argv)
 	printf("Successfully started! Please run `sudo cat /sys/kernel/debug/tracing/trace_pipe` "
 	       "to see output of the BPF programs.\n");
 
-	// int tasks_fd= bpf_map__fd(skel->obj->map.task_net_stat);
-	int tasks_fd = bpf_object__find_map_fd_by_name(skel->obj, "tasks_net_stat");
+	// int tgid_map_fd= bpf_map__fd(skel->obj->map.task_net_stat);
+	tgid_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "tgid_net_stat");
+	tid_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "tid_net_stat");
 
 	// pthread_t tid;
 	// int err = pthread_create(&tid, NULL, &doSomeThing, NULL);
 	
 	serv_listen();
-	struct taskcount *stats = calloc(nr_cpus, sizeof(struct taskcount));
-	if (!stats) {
-		fprintf(stderr, "calloc task_net_stat failed\n");
-		return -ENOMEM;
-	}
-	// if ( chdir("/proc") == -1)
-	// 	return -1;
-	while (!stop) {
-		fprintf(stderr, ".");
-		unsigned long long lookup_key, next_key;
-		// struct task_count stats;
-		// lookup_key.type = 'g';
-		lookup_key = 1;
 
-		/* trigger our BPF program */
-		// 首次查找, key 设置为不存在, 从头开始遍历
-		printf("%-6s %-16s %-6s %-16s %-6s\n","PID","TCPRCV", "TCPRBYTES", "UDPRCV", "UDPRBYTES");
-		while(bpf_map_get_next_key(tasks_fd, &lookup_key, &next_key) == 0) {
-			bpf_map_lookup_elem(tasks_fd, &next_key, stats);
-			// printf("%-6d %-16lld %-6lld %-16lld %-6lld\n", next_key.pid, task_count_process.tcprcvpacks, task_count_process.tcprcvbytes, task_count_process.udprcvpacks, task_count_process.udprcvbytes);
+	
+	// struct taskcount *stats = calloc(nr_cpus, sizeof(struct taskcount));
+	// if (!stats) {
+	// 	fprintf(stderr, "calloc task_net_stat failed\n");
+	// 	return -ENOMEM;
+	// }
+	// // if ( chdir("/proc") == -1)
+	// // 	return -1;
+	// while (!stop) {
+	// 	fprintf(stderr, ".");
+	// 	unsigned long long lookup_key, next_key;
+	// 	// struct task_count stats;
+	// 	// lookup_key.type = 'g';
+	// 	lookup_key = 1;
 
-			lookup_key = next_key;
-			struct taskcount data = {
-				.net_tcp_rx = 0,
-				.net_tcp_rx_bytes = 0,
-				.net_tcp_tx = 0,
-				.net_tcp_tx_bytes = 0,
-				.net_udp_rx = 0
-			};
+	// 	/* trigger our BPF program */
+	// 	// 首次查找, key 设置为不存在, 从头开始遍历
+	// 	printf("%-6s %-16s %-6s %-16s %-6s\n","PID","TCPRCV", "TCPRBYTES", "UDPRCV", "UDPRBYTES");
+	// 	while(bpf_map_get_next_key(tgid_map_fd, &lookup_key, &next_key) == 0) {
+	// 		bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
+	// 		// printf("%-6d %-16lld %-6lld %-16lld %-6lld\n", next_key.pid, task_count_process.tcprcvpacks, task_count_process.tcprcvbytes, task_count_process.udprcvpacks, task_count_process.udprcvbytes);
+
+	// 		lookup_key = next_key;
+	// 		struct taskcount data = {
+	// 			.tcpsndpacks = 0,
+	// 			.tcpsndbytes = 0,
+	// 			.tcprcvpacks = 0,
+	// 			.tcprcvbytes = 0,
+	// 			.udpsndpacks = 0
+	// 		};
 			
-			// bpf_map_update_elem(tasks_fd, &next_key, &value_zero, BPF_EXIST);
-			// if (next_key == 522878)
-			// 	printf("%llu %ld %ld %ld %ld %ld\n",next_key, value_zero.net_tcp_rx);
+	// 		// bpf_map_update_elem(tgid_map_fd, &next_key, &value_zero, BPF_EXIST);
+	// 		// if (next_key == 522878)
+	// 		// 	printf("%llu %ld %ld %ld %ld %ld\n",next_key, value_zero.tcpsndpacks);
 
-			for (int i = 0; i < nr_cpus; i++) {
-				data.net_tcp_rx += stats[i].net_tcp_rx;
-				data.net_tcp_rx_bytes += stats[i].net_tcp_rx_bytes;
-				data.net_tcp_tx += stats[i].net_tcp_tx;
-				data.net_tcp_tx_bytes += stats[i].net_tcp_tx_bytes;
-				data.net_udp_rx += stats[i].net_udp_rx;
-				data.net_udp_rx_bytes += stats[i].net_udp_rx_bytes;
-				data.net_udp_tx += stats[i].net_udp_tx;
-				data.net_udp_tx_bytes += stats[i].net_udp_tx_bytes;
-			}
-			// 如果字节数超过2^64?
-			// if (data.net_tcp_rx_bytes >  || data.net_tcp_tx_bytes || data.net_udp_rx_bytes|| data.net_udp_tx_bytes) 
-			// 	bpf_map_delete_elem(tasks_fd, &next_key);
-			// if (next_key == 554670)
-			printf("%llu %ld %ld %ld %ld %ld\n",next_key, data.net_tcp_rx, data.net_tcp_rx_bytes, data.net_tcp_tx, data.net_tcp_tx_bytes, data.net_udp_rx);
+	// 		for (int i = 0; i < nr_cpus; i++) {
+	// 			data.tcpsndpacks += stats[i].tcpsndpacks;
+	// 			data.tcpsndbytes += stats[i].tcpsndbytes;
+	// 			data.tcprcvpacks += stats[i].tcprcvpacks;
+	// 			data.tcprcvbytes += stats[i].tcprcvbytes;
+	// 			data.udpsndpacks += stats[i].udpsndpacks;
+	// 			data.udpsndbytes += stats[i].udpsndbytes;
+	// 			data.udprcvpacks += stats[i].udprcvpacks;
+	// 			data.udprcvbytes += stats[i].udprcvbytes;
+	// 		}
+	// 		// 如果字节数超过2^64?
+	// 		// if (data.tcpsndbytes >  || data.tcprcvbytes || data.udpsndbytes|| data.udprcvbytes) 
+	// 		// 	bpf_map_delete_elem(tgid_map_fd, &next_key);
+	// 		// if (next_key == 554670)
+	// 		printf("%llu %ld %ld %ld %ld %ld\n",next_key, data.tcpsndpacks, data.tcpsndbytes, data.tcprcvpacks, data.tcprcvbytes, data.udpsndpacks);
 			
-			struct netpertask npt = {
-				.id = next_key,
-				// .command = 
-				.tc = data
-			};
-			socklen_t len = sizeof npt;
-			struct naheader 	*nap;
-			int histfd = histopen(&nap);
-			recstore(histfd, &npt, len);
+	// 		struct netpertask npt = {
+	// 			.id = next_key,
+	// 			// .command = 
+	// 			.tc = data
+	// 		};
+	// 		socklen_t len = sizeof npt;
+	// 		struct naheader 	*nap;
+	// 		int histfd = histopen(&nap);
+	// 		recstore(histfd, &npt, len);
 
-			if(kill(next_key, 0) && errno == ESRCH) 
-				bpf_map_delete_elem(tasks_fd, &next_key);
-		}
-		sleep(1);
-	}
+	// 		if(kill(next_key, 0) && errno == ESRCH) 
+	// 			bpf_map_delete_elem(tgid_map_fd, &next_key);
+	// 	}
+	// 	sleep(1);
+	// }
 
 cleanup:
 	kprobe_bpf__destroy(skel);
