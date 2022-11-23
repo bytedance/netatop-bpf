@@ -22,7 +22,6 @@ void deal(struct netpertask *npt)
             return;
         }
     }
-    memset(&npt->tc, 0, sizeof(npt->tc));
     for (int i = 0; i < nr_cpus; i++) {
         npt->tc.tcpsndpacks += stats[i].tcpsndpacks;
         npt->tc.tcpsndbytes += stats[i].tcpsndbytes;
@@ -33,7 +32,7 @@ void deal(struct netpertask *npt)
         npt->tc.udprcvpacks += stats[i].udprcvpacks;
         npt->tc.udprcvbytes += stats[i].udprcvbytes;
     }
-    printf("%llu %llu %ld %ld %ld %ld\n", pid, npt->tc.tcpsndpacks, npt->tc.tcpsndbytes, npt->tc.tcprcvpacks, npt->tc.tcprcvbytes, npt->tc.udpsndpacks);
+    // printf("%c %llu %llu %ld %ld %ld %ld\n", npt->type, pid, npt->tc.tcpsndpacks, npt->tc.tcpsndbytes, npt->tc.tcprcvpacks, npt->tc.tcprcvbytes, npt->tc.udpsndpacks);
 
 }
 

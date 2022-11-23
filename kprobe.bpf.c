@@ -33,7 +33,7 @@ static __always_inline u64 current_tgid()
 
 static __always_inline u64 current_tid()
 {
-	u64 tid = bpf_get_current_pid_tgid();
+	u64 tid = bpf_get_current_pid_tgid() & 0x00000000ffffffff;
 	// bpf_printk("bpf_get_current_tgid_tgid %d\n", tgid);
 	return tid;
 }
@@ -41,16 +41,16 @@ static __always_inline u64 current_tid()
 SEC("raw_tracepoint/udp_send_length")
 int BPF_PROG(udp_send_length_k, struct sock *sk, int length, int error, int flags)
 {
-	struct taskcount *stat;
+	struct taskcount *stat_tgid, *stat_tid;
 
 	if (error != 0)
 		return 0;
 
 	u64 tgid = current_tgid();
-	stat = bpf_map_lookup_elem(&tgid_net_stat, &tgid);
-	if (stat) {
-		stat->udprcvpacks++;
-		stat->udprcvbytes += length;
+	stat_tgid = bpf_map_lookup_elem(&tgid_net_stat, &tgid);
+	if (stat_tgid) {
+		stat_tgid->udprcvpacks++;
+		stat_tgid->udprcvbytes += length;
 	} else {
 		struct taskcount data ={
 			.udprcvpacks = 1,
@@ -59,22 +59,35 @@ int BPF_PROG(udp_send_length_k, struct sock *sk, int length, int error, int flag
 		
 		long ret = bpf_map_update_elem(&tgid_net_stat, &tgid, &data, BPF_ANY);
 	}
+	u64 tid = current_tid();
+	stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
+	if (stat_tid) {
+		stat_tid->udprcvpacks++;
+		stat_tid->udprcvbytes += length;
+	} else {
+		struct taskcount data ={
+			.udprcvpacks = 1,
+			.udprcvbytes = length
+		};
+		
+		long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
+	}
 	return 0;
 }
 
 SEC("raw_tracepoint/udp_recv_length")
 int BPF_PROG(udp_recv_length_k, struct sock *sk, int length, int error, int flags)
 {
-	struct taskcount *stat;
+	struct taskcount *stat_tgid, *stat_tid;
 
 	if (error != 0)
 		return 0;
 
 	u64 tgid = current_tgid();
-	stat = bpf_map_lookup_elem(&tgid_net_stat, &tgid);
-	if (stat) {
-		stat->udpsndpacks++;
-		stat->udpsndbytes += length;
+	stat_tgid = bpf_map_lookup_elem(&tgid_net_stat, &tgid);
+	if (stat_tgid) {
+		stat_tgid->udpsndpacks++;
+		stat_tgid->udpsndbytes += length;
 	} else {
 		struct taskcount data ={
 			.udpsndpacks = 1,
@@ -83,23 +96,36 @@ int BPF_PROG(udp_recv_length_k, struct sock *sk, int length, int error, int flag
 		
 		long ret = bpf_map_update_elem(&tgid_net_stat, &tgid, &data, BPF_ANY);
 	}
+	u64 tid = current_tid();
+	stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
+	if (stat_tid) {
+		stat_tid->udpsndpacks++;
+		stat_tid->udpsndbytes += length;
+	} else {
+		struct taskcount data ={
+			.udpsndpacks = 1,
+			.udpsndbytes = length
+		};
+		
+		long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
+	}
 	return 0;
 }
 
 SEC("raw_tracepoint/tcp_send_length")
 int BPF_PROG(tcp_send_length_k, struct sock *sk, int length, int error, int flags)
 {
-	struct taskcount *stat;
+	struct taskcount *stat_tgid,*stat_tid;
 	int id;
 
 	if (error != 0)
 		return 0;
 
 	u64 tgid = current_tgid(); 
-	stat = bpf_map_lookup_elem(&tgid_net_stat, &tgid);
-	if (stat) {
-		stat->tcprcvpacks++;
-		stat->tcprcvbytes += length;
+	stat_tgid = bpf_map_lookup_elem(&tgid_net_stat, &tgid);
+	if (stat_tgid) {
+		stat_tgid->tcprcvpacks++;
+		stat_tgid->tcprcvbytes += length;
 	} else {
 		struct taskcount data ={
 			.tcpsndpacks = 1,
@@ -107,6 +133,19 @@ int BPF_PROG(tcp_send_length_k, struct sock *sk, int length, int error, int flag
 		};
 		
 		long ret = bpf_map_update_elem(&tgid_net_stat, &tgid, &data, BPF_ANY);
+	}
+	u64 tid = current_tid(); 
+	stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
+	if (stat_tid) {
+		stat_tid->tcprcvpacks++;
+		stat_tid->tcprcvbytes += length;
+	} else {
+		struct taskcount data ={
+			.tcpsndpacks = 1,
+			.tcpsndbytes = length
+		};
+		
+		long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
 	}
 	return 0;
 }
@@ -147,15 +186,13 @@ int BPF_PROG(tcp_recv_length_k, void *sk, int length, int error, int flags)
 	if (stat_tid) {
 		stat_tid->tcpsndpacks++;
 		stat_tid->tcpsndbytes += length;
-		// bpf_printk("current_tgidtttttttt %d %d\n", stat->tcpsndpacks, stat->tcpsndbytes);
+		bpf_printk("current_tidtttttttt %llu %d %d\n", tid, stat_tid->tcpsndpacks, stat_tid->tcpsndbytes);
 	} else {
 		struct taskcount data ={
 			.tcpsndpacks = 1,
 			.tcpsndbytes = length
 		};
-		
 		long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
-		// bpf_printk("bpf_map_update_elem %d %d\n", data.tcpsndpacks, data.tcpsndbytes);
 	}
 	return 0;
 }
