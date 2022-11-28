@@ -104,6 +104,9 @@ int main(int argc, char **argv)
 	// pthread_t tid;
 	// int err = pthread_create(&tid, NULL, &doSomeThing, NULL);
 	
+	if ( fork() )
+		exit(0);
+		
 	serv_listen();
 
 	

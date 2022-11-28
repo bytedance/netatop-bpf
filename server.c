@@ -89,12 +89,13 @@ void serv_listen()
                 // recv_pack(events[i].data.fd);
                 struct netpertask npt;
                 int n = recv(events[i].data.fd, &npt, sizeof(npt), 0);
+                if (n == 0) {
+                    close(events[i].data.fd);
+                    continue;
+                }
                 deal(&npt);
                 send(events[i].data.fd, &npt, sizeof(npt), 0);
                 // printf("%d %llu %ld %ld %ld %ld\n", npt.id, npt.tc.tcpsndpacks, npt.tc.tcpsndbytes, npt.tc.tcprcvpacks, npt.tc.tcprcvbytes, npt.tc.udpsndpacks);
-
-                // if (n == 0)
-                //     close(events[i].data.fd);
                 // printf("%s\n", recv_t);
                // recv_t.data.send_fd = events[i].data.fd;
             }
