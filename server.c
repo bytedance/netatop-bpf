@@ -25,6 +25,7 @@
 #include "server.h"
 #include "netatop.h"
 #include "deal.h"
+#include "histfile.h"
 
 /*
 * Create a server endpoint of a connection.
@@ -100,6 +101,7 @@ void serv_listen()
                // recv_t.data.send_fd = events[i].data.fd;
             }
         }
+        sem_deal();
     }
 
 
@@ -110,40 +112,58 @@ errout:
     // return(rval);
 }
 
+void
+gethup(int sig)
+{
+}
 
-/* obtain the client's uid from its calling address */
-// len -= offsetof(struct sockaddr_un, sun_path);    /* len of pathname */
-// un.sun_path[len] = 0;    /* null terminate */
+void sem_deal()
+{
+  /*
+	** create the semaphore group and initialize it;
+	** if it already exists, verify if a netatopd daemon
+	** is already running
+	*/
+    int semid;
+	if ( (semid = semget(SEMAKEY, 0, 0)) >= 0)	// exists?
+	{
+		if ( semctl(semid, 0, GETVAL, 0) == 1)
+		{
+			fprintf(stderr, "Another netatopd is already running!");
+			exit(3);
+		}
+	}
+	else
+	{
+		if ( (semid = semget(SEMAKEY, 2, 0600|IPC_CREAT|IPC_EXCL)) >= 0)
+		{
+			(void) semctl(semid, 0, SETVAL, 0);
+			(void) semctl(semid, 1, SETVAL, SEMTOTAL);
+		}
+		else
+		{
+			perror("cannot create semaphore");
+			exit(3);
+		}
+	}
+    /*
+    ** the daemon can be woken up from getsockopt by receiving 
+    ** the sighup signal to verify if there are no clients any more
+    ** (truncate exitfile)
+    */
+    struct sigaction        sigact;
 
-// if(stat(un.sun_path, &statbuf) < 0)
-// {
-// 	rval = -2;
-// 	goto errout;
-// }
-// #ifdef    S_ISSOCK    /* not defined fro SVR4 */
-// if(S_ISSOCK(statbuf.st_mode) == 0)
-// {
-// 	rval = -3;    /* not a socket */
-// 	goto errout;
-// }
-// #endif
-// if((statbuf.st_mode & (S_IRWXG | S_IRWXO)) ||
-// 	(statbuf.st_mode & S_IRWXU) != S_IRWXU)
-// {
-// 	rval = -4;    /* is not rwx------ */
-// 	goto errout;
-// }
-
-// staletime = time(NULL) - STALE;
-// if(statbuf.st_atime < staletime ||
-// statbuf.st_ctime < staletime ||
-// statbuf.st_mtime < staletime)
-// {
-// 	rval = -5;    /* i-node is too old */    
-// 	goto errout;
-// }
-
-// if(uidptr != NULL)
-// 	*uidptr = statbuf.st_uid;    /* return uid of caller */
-// unlink(un.sun_path);    /* we're done with pathname now */
-				// return(clifd);
+    memset(&sigact, 0, sizeof sigact);
+    sigact.sa_handler = gethup;
+    sigaction(SIGHUP, &sigact, (struct sigaction *)0);
+    if (NUMCLIENTS == 0 && nap->curseq != 0)
+    {
+        /*
+        ** destroy and reopen history file
+        */
+        munmap(nap, sizeof(struct naheader));
+        close(histfd);
+        syslog(LOG_INFO, "reopen history file\n");
+        histfd = histopen(&nap);
+    }
+}

@@ -167,12 +167,12 @@ int BPF_PROG(tcp_recv_length_k, void *sk, int length, int error, int flags)
 	// if (tgid != 993940) {
 	// 	return 0;
 	// }
-	bpf_printk("length %d\n", length);
+	// bpf_printk("length %d\n", length);
 
 	if (stat_tgid) {
 		stat_tgid->tcprcvpacks++;
 		stat_tgid->tcprcvbytes += length;
-		bpf_printk("current_tgidtttttttt %d %d\n", stat_tgid->tcprcvpacks, stat_tgid->tcprcvbytes);
+		// bpf_printk("current_tgidtttttttt %d %d\n", stat_tgid->tcprcvpacks, stat_tgid->tcprcvbytes);
 	} else {
 		struct taskcount data ={
 			.tcprcvpacks = 1,
@@ -186,7 +186,7 @@ int BPF_PROG(tcp_recv_length_k, void *sk, int length, int error, int flags)
 	if (stat_tid) {
 		stat_tid->tcprcvpacks++;
 		stat_tid->tcprcvbytes += length;
-		bpf_printk("current_tidtttttttt %llu %d %d\n", tid, stat_tid->tcprcvpacks, stat_tid->tcprcvbytes);
+		// bpf_printk("current_tidtttttttt %llu %d %d\n", tid, stat_tid->tcprcvpacks, stat_tid->tcprcvbytes);
 	} else {
 		struct taskcount data ={
 			.tcprcvpacks = 1,

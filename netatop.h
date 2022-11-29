@@ -36,7 +36,19 @@ struct netpertask {
 	struct taskcount	tc;
 };
 
-static int histopen(struct naheader **nahp);
-// static void recstore(int fd, struct netpertask *np, socklen_t len);
+/*
+** Semaphore-handling
+**
+** A semaphore-group with two semaphores is created. The first semaphore
+** specifies the number of netatopd processes running (to be sure that only
+** one daemon is active at the time) ) and the second reflects the number
+** of processes using the log-file (inverted).
+** This second semaphore is initialized at some high value and is
+** decremented by every analysis process (like atop) that uses the log-file
+** and incremented as soon as such analysis process stops again.
+*/
+#define SEMTOTAL        100
+#define	NUMCLIENTS	(SEMTOTAL - semctl(semid, 1, GETVAL, 0))
+#define SEMAKEY         1541962
 
 #endif
