@@ -126,7 +126,7 @@ $(BZS_APPS): $(LIBBLAZESYM_OBJ)
 # Build application binary
 $(APPS): %: $(OUTPUT)/%.o $(LIBBPF_OBJ) | $(OUTPUT)
 	$(call msg,BINARY,$@)
-	$(Q)$(CC) server.c server.h deal.c deal.h $(CFLAGS) $^ $(ALL_LDFLAGS) -lelf -lz -o $@
+	$(Q)$(CC) histfile.c deal.c server.c $(CFLAGS) $^ $(ALL_LDFLAGS) -lelf -lz -o $@
 
 
 # delete failed targets

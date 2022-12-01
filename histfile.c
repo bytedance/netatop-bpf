@@ -67,8 +67,6 @@ histopen(struct naheader **nahp)
 		// syslog(LOG_ERR, "mmap of %s failed\n", NETEXITFILE);
 		exit(3);
 	}
-	printf("istopen success\n");
-
 	return fd;
 }
 
@@ -97,8 +95,8 @@ recstore(int fd, struct netpertask *np)
  	** filesystem space sufficient
 	** compress netpertask struct
 	*/
-	rv = compress(compbuf+1, &complen, (Byte *)np,
-					(unsigned long)sizeof *np);
+	// rv = compress(compbuf+1, &complen, (Byte *)np,
+	// 				(unsigned long)sizeof *np);
 	// switch (rv)
 	// {
     //        case Z_OK:
@@ -111,17 +109,15 @@ recstore(int fd, struct netpertask *np)
 	// 	exit(5);
 	// }
 
-	compbuf[0] = (Byte)complen;
+	// compbuf[0] = (Byte)complen;
 
 	/*
 	** write compressed netpertask struct, headed by one byte
 	** with the size of the compressed struct
 	*/
-	if ( write(fd, compbuf, complen+1) < complen)
+	if ( write(fd, np, sizeof *np) <sizeof *np)
 	{
 		// syslog(LOG_ERR, "write failure\n");
 		exit(5);
 	}
-	printf("recstore success\n");
-
 }

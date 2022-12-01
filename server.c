@@ -94,14 +94,14 @@ void serv_listen()
                     close(events[i].data.fd);
                     continue;
                 }
-                deal(&npt);
+                deal(events[i].data.fd, &npt);
                 send(events[i].data.fd, &npt, sizeof(npt), 0);
                 // printf("%d %llu %ld %ld %ld %ld\n", npt.id, npt.tc.tcpsndpacks, npt.tc.tcpsndbytes, npt.tc.tcprcvpacks, npt.tc.tcprcvbytes, npt.tc.udpsndpacks);
                 // printf("%s\n", recv_t);
                // recv_t.data.send_fd = events[i].data.fd;
             }
         }
-        sem_deal();
+        // sem_deal();
     }
 
 
@@ -117,14 +117,15 @@ gethup(int sig)
 {
 }
 
-void sem_deal()
+int semid;
+
+void sem_init()
 {
-  /*
+    /*
 	** create the semaphore group and initialize it;
 	** if it already exists, verify if a netatopd daemon
 	** is already running
 	*/
-    int semid;
 	if ( (semid = semget(SEMAKEY, 0, 0)) >= 0)	// exists?
 	{
 		if ( semctl(semid, 0, GETVAL, 0) == 1)
@@ -156,7 +157,12 @@ void sem_deal()
     memset(&sigact, 0, sizeof sigact);
     sigact.sa_handler = gethup;
     sigaction(SIGHUP, &sigact, (struct sigaction *)0);
-    if (NUMCLIENTS == 0 && nap->curseq != 0)
+    
+}
+
+void sem_deal()
+{
+  if (NUMCLIENTS == 0 && nap->curseq != 0)
     {
         /*
         ** destroy and reopen history file

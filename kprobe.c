@@ -78,10 +78,11 @@ int main(int argc, char **argv)
 	// pthread_t tid;
 	// int err = pthread_create(&tid, NULL, &doSomeThing, NULL);
 	
-	if ( fork() )
-		exit(0);
+	// if ( fork() )
+	// 	exit(0);
 	
-    histfd = histopen(&nap);
+    // histfd = histopen(&nap);
+	// sem_init();
 
 	serv_listen();
 

@@ -1,10 +1,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include "netatop.h"
+#include "histfile.h"
 #include "deal.h"
 
-void deal(struct netpertask *npt)
+void deal(int fd, struct netpertask *npt)
 {
     struct taskcount *stats = calloc(nr_cpus, sizeof(struct taskcount));
 	if (!stats) {
@@ -21,6 +23,13 @@ void deal(struct netpertask *npt)
         if (bpf_map_lookup_elem(tid_map_fd, &pid, stats) != 0) {
             return;
         }
+    } else if (npt->type == 'd'){
+        // if (bpf_map_lookup_elem(tid_map_fd, &pid, stats) != 0) {
+        //     return;
+        // }
+        //遍历map 得到退出进程 写入文件
+        int nr = deal_exited_process(fd, npt);
+        return;
     }
     for (int i = 0; i < nr_cpus; i++) {
         npt->tc.tcpsndpacks += stats[i].tcpsndpacks;
@@ -33,53 +42,61 @@ void deal(struct netpertask *npt)
         npt->tc.udprcvbytes += stats[i].udprcvbytes;
     }
     // printf("%c %llu %llu %ld %ld %ld %ld\n", npt->type, pid, npt->tc.tcpsndpacks, npt->tc.tcpsndbytes, npt->tc.tcprcvpacks, npt->tc.tcprcvbytes, npt->tc.udpsndpacks);
-
 }
 
-// printf("%-6s %-16s %-6s %-16s %-6s\n","PID","TCPRCV", "TCPRBYTES", "UDPRCV", "UDPRBYTES");
-//     while(bpf_map_get_next_key(tgid_map_fd, &lookup_key, &next_key) == 0) {
-//         bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
-//         // printf("%-6d %-16lld %-6lld %-16lld %-6lld\n", next_key.pid, task_count_process.tcprcvpacks, task_count_process.tcprcvbytes, task_count_process.udprcvpacks, task_count_process.udprcvbytes);
+void deal_exited_process(int fd, struct netpertask *npt)
+{
+    int nr = 0;
+    unsigned long long lookup_key, next_key;
 
-//         lookup_key = next_key;
-//         struct taskcount data = {
-//             .tcpsndpacks = 0,
-//             .tcpsndbytes = 0,
-//             .tcprcvpacks = 0,
-//             .tcprcvbytes = 0,
-//             .udpsndpacks = 0
-//         };
-        
-//         // bpf_map_update_elem(tgid_map_fd, &next_key, &value_zero, BPF_EXIST);
-//         // if (next_key == 522878)
-//         // 	printf("%llu %ld %ld %ld %ld %ld\n",next_key, value_zero.tcpsndpacks);
+    struct taskcount *stats = calloc(nr_cpus, sizeof(struct taskcount));
+	lookup_key = 1;
+    while(bpf_map_get_next_key(tgid_map_fd, &lookup_key, &next_key) == 0) {
+        lookup_key = next_key;
+        if(kill(next_key, 0) && errno == ESRCH) {
+            bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
 
-//         for (int i = 0; i < nr_cpus; i++) {
-//             data.tcpsndpacks += stats[i].tcpsndpacks;
-//             data.tcpsndbytes += stats[i].tcpsndbytes;
-//             data.tcprcvpacks += stats[i].tcprcvpacks;
-//             data.tcprcvbytes += stats[i].tcprcvbytes;
-//             data.udpsndpacks += stats[i].udpsndpacks;
-//             data.udpsndbytes += stats[i].udpsndbytes;
-//             data.udprcvpacks += stats[i].udprcvpacks;
-//             data.udprcvbytes += stats[i].udprcvbytes;
-//         }
-//         // 如果字节数超过2^64?
-//         // if (data.tcpsndbytes >  || data.tcprcvbytes || data.udpsndbytes|| data.udprcvbytes) 
-//         // 	bpf_map_delete_elem(tgid_map_fd, &next_key);
-//         // if (next_key == 554670)
-//         printf("%llu %ld %ld %ld %ld %ld\n",next_key, data.tcpsndpacks, data.tcpsndbytes, data.tcprcvpacks, data.tcprcvbytes, data.udpsndpacks);
-        
-//         struct netpertask npt = {
-//             .id = next_key,
-//             // .command = 
-//             .tc = data
-//         };
-//         socklen_t len = sizeof npt;
-//         struct naheader 	*nap;
-//         int histfd = histopen(&nap);
-//         recstore(histfd, &npt, len);
+            // printf("%-6d %-16lld %-6lld %-16lld %-6lld\n", next_key.pid, task_count_process.tcprcvpacks, task_count_process.tcprcvbytes, task_count_process.udprcvpacks, task_count_process.udprcvbytes);
 
-//         if(kill(next_key, 0) && errno == ESRCH) 
-//             bpf_map_delete_elem(tgid_map_fd, &next_key);
-//     }
+            struct taskcount data = {
+                .tcpsndpacks = 0,
+                .tcpsndbytes = 0,
+                .tcprcvpacks = 0,
+                .tcprcvbytes = 0,
+                .udpsndpacks = 0,
+                .udpsndbytes = 0,
+                .udprcvpacks = 0,
+                .udprcvbytes = 0,
+            };
+            
+            // bpf_map_update_elem(tgid_map_fd, &next_key, &value_zero, BPF_EXIST);
+            // if (next_key == 522878)
+            // 	printf("%llu %ld %ld %ld %ld %ld\n",next_key, value_zero.tcpsndpacks);
+
+            for (int i = 0; i < nr_cpus; i++) {
+                data.tcpsndpacks += stats[i].tcpsndpacks;
+                data.tcpsndbytes += stats[i].tcpsndbytes;
+                data.tcprcvpacks += stats[i].tcprcvpacks;
+                data.tcprcvbytes += stats[i].tcprcvbytes;
+                data.udpsndpacks += stats[i].udpsndpacks;
+                data.udpsndbytes += stats[i].udpsndbytes;
+                data.udprcvpacks += stats[i].udprcvpacks;
+                data.udprcvbytes += stats[i].udprcvbytes;
+            } 
+            // 如果字节数超过2^64?
+            // if (data.tcpsndbytes >  || data.tcprcvbytes || data.udpsndbytes|| data.udprcvbytes) 
+            // 	bpf_map_delete_elem(tgid_map_fd, &next_key);            
+            
+            struct netpertask npt = {
+                .id = next_key,
+                // .command = 
+                .tc = data
+            };
+            nr++;
+            send(fd, &npt, sizeof(npt), 0);
+            
+            bpf_map_delete_elem(tgid_map_fd, &next_key);
+        }
+    }
+    return nr;
+}
