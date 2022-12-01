@@ -25,7 +25,6 @@
 #include "server.h"
 #include "netatop.h"
 #include "deal.h"
-#include "histfile.h"
 
 /*
 * Create a server endpoint of a connection.
@@ -59,7 +58,7 @@ void serv_listen()
         rval = -3;
         goto errout;
     }
-    printf("listen success \n");
+    // printf("listen success \n");
 
 	struct epoll_event ev, events[1000];
 	int epoll_fd = epoll_create(10000);//生成epoll句柄
@@ -77,28 +76,23 @@ void serv_listen()
 				len = sizeof(un);
 				int conn_fd;
 				if((conn_fd = accept(sock_fd, (struct sockaddr *)&cli_un, &len)) < 0)
-					return(-1);    /* often errno=EINTR, if signal caught */
+					return(-4);    /* often errno=EINTR, if signal caught */
 				ev.data.fd = conn_fd;
                 ev.events = EPOLLIN;
                 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_fd, &ev);
-				printf("accept success\n");
+				// printf("accept success\n");
 
             }
             else if (events[i].events & EPOLLIN)
             {
-			    // printf("recv ing\n");
-                // recv_pack(events[i].data.fd);
                 struct netpertask npt;
                 int n = recv(events[i].data.fd, &npt, sizeof(npt), 0);
                 if (n == 0) {
                     close(events[i].data.fd);
                     continue;
-                }
+                } 
                 deal(events[i].data.fd, &npt);
                 send(events[i].data.fd, &npt, sizeof(npt), 0);
-                // printf("%d %llu %ld %ld %ld %ld\n", npt.id, npt.tc.tcpsndpacks, npt.tc.tcpsndbytes, npt.tc.tcprcvpacks, npt.tc.tcprcvbytes, npt.tc.udpsndpacks);
-                // printf("%s\n", recv_t);
-               // recv_t.data.send_fd = events[i].data.fd;
             }
         }
         // sem_deal();
@@ -112,64 +106,64 @@ errout:
     // return(rval);
 }
 
-void
-gethup(int sig)
-{
-}
+// void
+// gethup(int sig)
+// {
+// }
 
-int semid;
+// int semid;
 
-void sem_init()
-{
-    /*
-	** create the semaphore group and initialize it;
-	** if it already exists, verify if a netatopd daemon
-	** is already running
-	*/
-	if ( (semid = semget(SEMAKEY, 0, 0)) >= 0)	// exists?
-	{
-		if ( semctl(semid, 0, GETVAL, 0) == 1)
-		{
-			fprintf(stderr, "Another netatopd is already running!");
-			exit(3);
-		}
-	}
-	else
-	{
-		if ( (semid = semget(SEMAKEY, 2, 0600|IPC_CREAT|IPC_EXCL)) >= 0)
-		{
-			(void) semctl(semid, 0, SETVAL, 0);
-			(void) semctl(semid, 1, SETVAL, SEMTOTAL);
-		}
-		else
-		{
-			perror("cannot create semaphore");
-			exit(3);
-		}
-	}
-    /*
-    ** the daemon can be woken up from getsockopt by receiving 
-    ** the sighup signal to verify if there are no clients any more
-    ** (truncate exitfile)
-    */
-    struct sigaction        sigact;
+// void sem_init()
+// {
+//     /*
+// 	** create the semaphore group and initialize it;
+// 	** if it already exists, verify if a netatopd daemon
+// 	** is already running
+// 	*/
+// 	if ( (semid = semget(SEMAKEY, 0, 0)) >= 0)	// exists?
+// 	{
+// 		if ( semctl(semid, 0, GETVAL, 0) == 1)
+// 		{
+// 			fprintf(stderr, "Another netatopd is already running!");
+// 			exit(3);
+// 		}
+// 	}
+// 	else
+// 	{
+// 		if ( (semid = semget(SEMAKEY, 2, 0600|IPC_CREAT|IPC_EXCL)) >= 0)
+// 		{
+// 			(void) semctl(semid, 0, SETVAL, 0);
+// 			(void) semctl(semid, 1, SETVAL, SEMTOTAL);
+// 		}
+// 		else
+// 		{
+// 			perror("cannot create semaphore");
+// 			exit(3);
+// 		}
+// 	}
+//     /*
+//     ** the daemon can be woken up from getsockopt by receiving 
+//     ** the sighup signal to verify if there are no clients any more
+//     ** (truncate exitfile)
+//     */
+//     struct sigaction        sigact;
 
-    memset(&sigact, 0, sizeof sigact);
-    sigact.sa_handler = gethup;
-    sigaction(SIGHUP, &sigact, (struct sigaction *)0);
+//     memset(&sigact, 0, sizeof sigact);
+//     sigact.sa_handler = gethup;
+//     sigaction(SIGHUP, &sigact, (struct sigaction *)0);
     
-}
+// }
 
-void sem_deal()
-{
-  if (NUMCLIENTS == 0 && nap->curseq != 0)
-    {
-        /*
-        ** destroy and reopen history file
-        */
-        munmap(nap, sizeof(struct naheader));
-        close(histfd);
-        syslog(LOG_INFO, "reopen history file\n");
-        histfd = histopen(&nap);
-    }
-}
+// void sem_deal()
+// {
+//   if (NUMCLIENTS == 0 && nap->curseq != 0)
+//     {
+//         /*
+//         ** destroy and reopen history file
+//         */
+//         munmap(nap, sizeof(struct naheader));
+//         close(histfd);
+//         syslog(LOG_INFO, "reopen history file\n");
+//         histfd = histopen(&nap);
+//     }
+// }

@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include "netatop.h"
-#include "histfile.h"
 #include "deal.h"
 
 void deal(int fd, struct netpertask *npt)
@@ -28,7 +27,7 @@ void deal(int fd, struct netpertask *npt)
         //     return;
         // }
         //遍历map 得到退出进程 写入文件
-        int nr = deal_exited_process(fd, npt);
+        deal_exited_process(fd, npt);
         return;
     }
     for (int i = 0; i < nr_cpus; i++) {
@@ -46,7 +45,6 @@ void deal(int fd, struct netpertask *npt)
 
 void deal_exited_process(int fd, struct netpertask *npt)
 {
-    int nr = 0;
     unsigned long long lookup_key, next_key;
 
     struct taskcount *stats = calloc(nr_cpus, sizeof(struct taskcount));
@@ -92,11 +90,10 @@ void deal_exited_process(int fd, struct netpertask *npt)
                 // .command = 
                 .tc = data
             };
-            nr++;
+    
             send(fd, &npt, sizeof(npt), 0);
             
             bpf_map_delete_elem(tgid_map_fd, &next_key);
         }
     }
-    return nr;
 }

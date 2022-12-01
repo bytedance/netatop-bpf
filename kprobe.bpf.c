@@ -163,11 +163,6 @@ int BPF_PROG(tcp_recv_length_k, void *sk, int length, int error, int flags)
 	u64 tid = current_tid();
 	stat_tgid = bpf_map_lookup_elem(&tgid_net_stat, &tgid);
 	stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
-	// bpf_printk("current_tgid %d %d\n", stat->tcprcvpacks, stat->tcprcvbytes);
-	// if (tgid != 993940) {
-	// 	return 0;
-	// }
-	// bpf_printk("length %d\n", length);
 
 	if (stat_tgid) {
 		stat_tgid->tcprcvpacks++;
