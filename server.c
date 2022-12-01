@@ -34,7 +34,7 @@ void serv_listen()
 {
     int            sock_fd, len, err, rval;
     struct sockaddr_un    un, cli_un;
-	char *name = "netatop-bpf-socket";
+	char *name = NETATOP_SOCKET;
     
     /* create a UNIX domain stream socket */
     if((sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
@@ -47,6 +47,7 @@ void serv_listen()
     strcpy(un.sun_path, name);
     len = offsetof(struct sockaddr_un, sun_path) + strlen(name);
 
+    
     /* bind the name to the descriptor */
     if(bind(sock_fd, (struct sockaddr *)&un, len) < 0)
     {
@@ -59,6 +60,12 @@ void serv_listen()
         goto errout;
     }
     // printf("listen success \n");
+
+    if(chmod(un.sun_path, 0777) < 0)
+    {
+        rval = -4;
+        goto errout;
+    }
 
 	struct epoll_event ev, events[1000];
 	int epoll_fd = epoll_create(10000);//生成epoll句柄
@@ -76,7 +83,7 @@ void serv_listen()
 				len = sizeof(un);
 				int conn_fd;
 				if((conn_fd = accept(sock_fd, (struct sockaddr *)&cli_un, &len)) < 0)
-					return(-4);    /* often errno=EINTR, if signal caught */
+					return(-5);    /* often errno=EINTR, if signal caught */
 				ev.data.fd = conn_fd;
                 ev.events = EPOLLIN;
                 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_fd, &ev);
