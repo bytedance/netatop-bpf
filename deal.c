@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <errno.h>
 #include "netatop.h"
 #include "deal.h"
@@ -14,7 +15,7 @@ void deal(int fd, struct netpertask *npt)
 	}
     unsigned long long pid = (unsigned long long)npt->id;
     memset(&npt->tc, 0, sizeof(npt->tc));
-    if (npt->type == 'g') {
+    if (npt->type == 'g') { 
         if (bpf_map_lookup_elem(tgid_map_fd, &pid, stats) != 0) {
             return;
         }
@@ -49,10 +50,12 @@ void deal_exited_process(int fd, struct netpertask *npt)
 
     struct taskcount *stats = calloc(nr_cpus, sizeof(struct taskcount));
 	lookup_key = 1;
+    // delete exited process
     while(bpf_map_get_next_key(tgid_map_fd, &lookup_key, &next_key) == 0) {
         lookup_key = next_key;
         if(kill(next_key, 0) && errno == ESRCH) {
-            bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
+            bpf_map_lookup_and_delete_elem(tgid_map_fd, &next_key, stats);
+            // bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
 
             // printf("%-6d %-16lld %-6lld %-16lld %-6lld\n", next_key.pid, task_count_process.tcprcvpacks, task_count_process.tcprcvbytes, task_count_process.udprcvpacks, task_count_process.udprcvbytes);
 
@@ -93,7 +96,19 @@ void deal_exited_process(int fd, struct netpertask *npt)
     
             send(fd, &npt, sizeof(npt), 0);
             
-            bpf_map_delete_elem(tgid_map_fd, &next_key);
+            // bpf_map_delete_elem(tgid_map_fd, &next_key);
+        }
+    }
+
+    // delete exited thread 
+    lookup_key = 0;
+    next_key = 0; 
+    while(bpf_map_get_next_key(tid_map_fd, &lookup_key, &next_key) == 0) {
+        lookup_key = next_key;
+
+        if(kill(next_key, 0) && errno == ESRCH) {
+            // delete exited thread
+            bpf_map_lookup_and_delete_elem(tid_map_fd, &next_key);
         }
     }
 }
