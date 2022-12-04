@@ -123,11 +123,27 @@ $(patsubst %,$(OUTPUT)/%.o,$(BZS_APPS)): $(LIBBLAZESYM_HEADER)
 
 $(BZS_APPS): $(LIBBLAZESYM_OBJ)
 
-# Build application binary
-$(APPS): %: $(OUTPUT)/%.o $(LIBBPF_OBJ) | $(OUTPUT)
-	$(call msg,BINARY,$@)
-	$(Q)$(CC) deal.c server.c $(CFLAGS) $^ $(ALL_LDFLAGS) -lelf -lz -o $@
+OBJ1 := $(OUTPUT)/server.o
+OBJ2 := $(OUTPUT)/deal.o
 
+${OBJ1}: server.c server.h
+	@echo "============开始编译============"
+	$(CC) -c server.c -o ${OBJ1}
+	
+${OBJ2}: deal.c deal.h
+	@echo "============开始编译============"
+	$(CC) -c deal.c -o ${OBJ2}
+
+
+# Build application binary
+$(APPS): %: $(OUTPUT)/%.o ${OBJ1} ${OBJ2} $(LIBBPF_OBJ) | $(OUTPUT) 
+	$(call msg,BINARY,$@)
+	$(Q)$(CC) $(CFLAGS) $^ $(ALL_LDFLAGS) -lelf -lz -o $@
+
+# # Build application binary
+# $(APPS): %: $(OUTPUT)/%.o $(LIBBPF_OBJ) | $(OUTPUT)
+# 	$(call msg,BINARY,$@)
+# 	$(Q)$(CC) deal.c server.c $(CFLAGS) $^ $(ALL_LDFLAGS) -lelf -lz -o $@
 
 # delete failed targets
 .DELETE_ON_ERROR:
