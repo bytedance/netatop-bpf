@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <ctype.h>
+#include <sys/sem.h>
 #include <sys/resource.h>
 #include <bpf/libbpf.h>
 #include "kprobe.skel.h"
@@ -32,17 +33,11 @@ struct taskcount value_zero = {
 	.udpsndpacks = 0
 };
 
-<<<<<<< HEAD
-int main(int argc, char **argv)
-{
-	struct kprobe_bpf *skel;
-=======
 int semid;
 int tgid_map_fd;
 int tid_map_fd;
 int nr_cpus;
 struct kprobe_bpf *skel;
-static struct bpf_object_open_opts open_opts = {.sz = sizeof(struct bpf_object_open_opts)};
 
 int main(int argc, char **argv)
 {
@@ -77,7 +72,6 @@ int main(int argc, char **argv)
 		}
 	}
 
->>>>>>> eb484c2... fix
 	int err;
 	nr_cpus = libbpf_num_possible_cpus();
 
@@ -93,22 +87,12 @@ int main(int argc, char **argv)
 	}
 
 	/* Attach tracepoint handler */
-	err = kprobe_bpf__attach(skel);
-	if (err) {
-		fprintf(stderr, "Failed to attach BPF skeleton\n");
-		goto cleanup;
-	}
+	// err = kprobe_bpf__attach(skel);
+	// if (err) {
+	// 	fprintf(stderr, "Failed to attach BPF skeleton\n");
+	// 	goto cleanup;
+	// }
 
-<<<<<<< HEAD
-
-	if (signal(SIGINT, sig_int) == SIG_ERR) {
-		fprintf(stderr, "can't set signal handler: %s\n", strerror(errno));
-		printf("can't set signal handler: %s\n", strerror(errno));
-		goto cleanup;
-	}
-
-=======
->>>>>>> eb484c2... fix
 	// printf("Successfully started! Please run `sudo cat /sys/kernel/debug/tracing/trace_pipe` "
 	//        "to see output of the BPF programs.\n");
 
@@ -118,8 +102,6 @@ int main(int argc, char **argv)
 
 	if ( fork() )
 		exit(0);
-<<<<<<< HEAD
-=======
 	setsid();
 	/*
 	** raise semaphore to define a busy netatop
@@ -129,11 +111,29 @@ int main(int argc, char **argv)
 		printf("cannot increment semaphore\n");
 		exit(3);
 	}
->>>>>>> eb484c2... fix
 
 	serv_listen();
 
 cleanup:
 	kprobe_bpf__destroy(skel);
 	return -err;
+}
+
+void bpf_attach(struct kprobe_bpf *skel)
+{
+	int err;
+	err = kprobe_bpf__attach(skel);
+	if (err) {
+		fprintf(stderr, "Failed to attach BPF skeleton\n");
+	}
+}
+
+void bpf_destroy(struct kprobe_bpf *skel)
+{
+	if (!skel->skeleton)
+		return;
+	if (skel->skeleton->progs)
+		bpf_object__detach_skeleton(skel->skeleton);
+	// if (skel->skeleton->obj)
+	// 	bpf_object__close(*skel->skeleton->obj);
 }

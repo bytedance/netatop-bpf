@@ -29,7 +29,7 @@
 /*
 * Create a server endpoint of a connection.
 */
-void serv_listen()
+int serv_listen()
 {
     int            sock_fd, len, err, rval;
     struct sockaddr_un    un, cli_un;
@@ -84,10 +84,6 @@ void serv_listen()
 				ev.data.fd = conn_fd;
                 ev.events = EPOLLIN;
                 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_fd, &ev);
-<<<<<<< HEAD
-				// printf("accept success\n");
-
-=======
                 
                 // Confirm the number of clients connected to netatop
                 int num = semctl(semid, 1, GETVAL, 0);
@@ -105,7 +101,6 @@ void serv_listen()
                 }
                 // num = semctl(semid, 1, GETVAL, 0);
                 // printf("num %d\n", num);
->>>>>>> eb484c2... fix
             }
             else if (events[i].events & EPOLLIN)
             {
@@ -113,8 +108,7 @@ void serv_listen()
                 int n = recv(events[i].data.fd, &npt, sizeof(npt), 0);
                 if (n == 0) {
                     close(events[i].data.fd);
-<<<<<<< HEAD
-=======
+
                     struct sembuf		semincr = {1, -1, SEM_UNDO};
                     if ( semop(semid, &semincr, 1) == -1)
                     {
@@ -129,14 +123,12 @@ void serv_listen()
                         */
                         bpf_destroy(skel); 
                     }
->>>>>>> eb484c2... fix
                     continue;
                 } 
                 deal(events[i].data.fd, &npt);
                 send(events[i].data.fd, &npt, sizeof(npt), 0);
             }
         }
-        // sem_deal();
     }
 
 
@@ -144,72 +136,5 @@ errout:
     err = errno;
     close(sock_fd);
     errno = err;
-<<<<<<< HEAD
-    // return(rval);
-}
-
-// void
-// gethup(int sig)
-// {
-// }
-
-// int semid;
-
-// void sem_init()
-// {
-//     /*
-// 	** create the semaphore group and initialize it;
-// 	** if it already exists, verify if a netatopd daemon
-// 	** is already running
-// 	*/
-// 	if ( (semid = semget(SEMAKEY, 0, 0)) >= 0)	// exists?
-// 	{
-// 		if ( semctl(semid, 0, GETVAL, 0) == 1)
-// 		{
-// 			fprintf(stderr, "Another netatopd is already running!");
-// 			exit(3);
-// 		}
-// 	}
-// 	else
-// 	{
-// 		if ( (semid = semget(SEMAKEY, 2, 0600|IPC_CREAT|IPC_EXCL)) >= 0)
-// 		{
-// 			(void) semctl(semid, 0, SETVAL, 0);
-// 			(void) semctl(semid, 1, SETVAL, SEMTOTAL);
-// 		}
-// 		else
-// 		{
-// 			perror("cannot create semaphore");
-// 			exit(3);
-// 		}
-// 	}
-//     /*
-//     ** the daemon can be woken up from getsockopt by receiving 
-//     ** the sighup signal to verify if there are no clients any more
-//     ** (truncate exitfile)
-//     */
-//     struct sigaction        sigact;
-
-//     memset(&sigact, 0, sizeof sigact);
-//     sigact.sa_handler = gethup;
-//     sigaction(SIGHUP, &sigact, (struct sigaction *)0);
-    
-// }
-
-// void sem_deal()
-// {
-//   if (NUMCLIENTS == 0 && nap->curseq != 0)
-//     {
-//         /*
-//         ** destroy and reopen history file
-//         */
-//         munmap(nap, sizeof(struct naheader));
-//         close(histfd);
-//         syslog(LOG_INFO, "reopen history file\n");
-//         histfd = histopen(&nap);
-//     }
-// }
-=======
     return(rval);
 }
->>>>>>> eb484c2... fix

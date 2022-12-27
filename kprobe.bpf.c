@@ -175,13 +175,13 @@ int BPF_PROG(tcp_recv_length_k, void *sk, int length, int error, int flags)
 		};
 		
 		long ret = bpf_map_update_elem(&tgid_net_stat, &tgid, &data, BPF_ANY);
-		bpf_printk("bpf_map_update_elem %d %d\n", data.tcprcvpacks, data.tcprcvbytes);
+		// bpf_printk("bpf_map_update_elem %d %d\n", data.tcprcvpacks, data.tcprcvbytes);
 	}
 
 	if (stat_tid) {
 		stat_tid->tcprcvpacks++;
 		stat_tid->tcprcvbytes += length;
-		bpf_printk("current_tidtttttttt %llu %d %d\n", tid, stat_tid->tcprcvpacks, stat_tid->tcprcvbytes);
+		// bpf_printk("current_tidtttttttt %llu %d %d\n", tid, stat_tid->tcprcvpacks, stat_tid->tcprcvbytes);
 	} else {
 		struct taskcount data ={
 			.tcprcvpacks = 1,
