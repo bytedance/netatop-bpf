@@ -28,7 +28,6 @@
 
 /*
 * Create a server endpoint of a connection.
-* Return fd if all ok, <0 on error. 
 */
 void serv_listen()
 {
@@ -47,7 +46,6 @@ void serv_listen()
     strcpy(un.sun_path, name);
     len = offsetof(struct sockaddr_un, sun_path) + strlen(name);
 
-    
     /* bind the name to the descriptor */
     if(bind(sock_fd, (struct sockaddr *)&un, len) < 0)
     {
@@ -59,7 +57,6 @@ void serv_listen()
         rval = -3;
         goto errout;
     }
-    // printf("listen success \n");
 
     if(chmod(un.sun_path, 0777) < 0)
     {
@@ -68,27 +65,47 @@ void serv_listen()
     }
 
 	struct epoll_event ev, events[1000];
-	int epoll_fd = epoll_create(10000);//生成epoll句柄
-    ev.data.fd = sock_fd;//设置与要处理事件相关的文件描述符
-    ev.events = EPOLLIN;//设置要处理的事件类型
-    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock_fd, &ev);//注册epoll事件
+	int epoll_fd = epoll_create(10000);   /* create an epoll handle */
+    ev.data.fd = sock_fd;   /* set fd associated with the event to be processed */
+    ev.events = EPOLLIN;    /* set the type of event to handle */
+    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock_fd, &ev); /* register epoll events */
    
     while(1)
     {
         int fd_num = epoll_wait(epoll_fd, events, 10000, 1000);
         for (int i = 0; i < fd_num; i++)
         {
-            if (events[i].data.fd == sock_fd)
+            if (events[i].data.fd == sock_fd) // new client
             {
 				len = sizeof(un);
 				int conn_fd;
 				if((conn_fd = accept(sock_fd, (struct sockaddr *)&cli_un, &len)) < 0)
-					return(-5);    /* often errno=EINTR, if signal caught */
+					return(-5);    
 				ev.data.fd = conn_fd;
                 ev.events = EPOLLIN;
                 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_fd, &ev);
+<<<<<<< HEAD
 				// printf("accept success\n");
 
+=======
+                
+                // Confirm the number of clients connected to netatop
+                int num = semctl(semid, 1, GETVAL, 0);
+                if ( num == 0)
+                {
+                    // If there is no client connection before new 
+                    // connection, the bpf program will not be loaded.
+                    bpf_attach(skel);
+                }
+                struct sembuf	semincr = {1, +1, SEM_UNDO};
+                if ( semop(semid, &semincr, 1) == -1)
+                {
+                    printf("cannot increment semaphore\n");
+                    exit(3);
+                }
+                // num = semctl(semid, 1, GETVAL, 0);
+                // printf("num %d\n", num);
+>>>>>>> eb484c2... fix
             }
             else if (events[i].events & EPOLLIN)
             {
@@ -96,6 +113,23 @@ void serv_listen()
                 int n = recv(events[i].data.fd, &npt, sizeof(npt), 0);
                 if (n == 0) {
                     close(events[i].data.fd);
+<<<<<<< HEAD
+=======
+                    struct sembuf		semincr = {1, -1, SEM_UNDO};
+                    if ( semop(semid, &semincr, 1) == -1)
+                    {
+                        printf("cannot increment semaphore\n");
+                        exit(3);
+                    }
+                    if (NUMCLIENTS == 0)
+                    {
+                        /*
+                        ** The last client connection is closed，
+                        ** unload bpf program.
+                        */
+                        bpf_destroy(skel); 
+                    }
+>>>>>>> eb484c2... fix
                     continue;
                 } 
                 deal(events[i].data.fd, &npt);
@@ -110,6 +144,7 @@ errout:
     err = errno;
     close(sock_fd);
     errno = err;
+<<<<<<< HEAD
     // return(rval);
 }
 
@@ -174,3 +209,7 @@ errout:
 //         histfd = histopen(&nap);
 //     }
 // }
+=======
+    return(rval);
+}
+>>>>>>> eb484c2... fix

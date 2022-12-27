@@ -25,4 +25,13 @@ struct netpertask {
 	struct taskcount	tc;
 };
 
+<<<<<<< HEAD
+=======
+
+#define	NUMCLIENTS	(semctl(semid, 1, GETVAL, 0))
+
+extern struct kprobe_bpf *skel;
+extern int semid;
+
+>>>>>>> eb484c2... fix
 #endif

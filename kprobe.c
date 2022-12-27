@@ -23,10 +23,6 @@ static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va
 
 static volatile sig_atomic_t stop;
 
-static void sig_int(int signo)
-{
-	stop = 1;
-}
 
 struct taskcount value_zero = {
 	.tcpsndpacks = 0,
@@ -36,9 +32,52 @@ struct taskcount value_zero = {
 	.udpsndpacks = 0
 };
 
+<<<<<<< HEAD
 int main(int argc, char **argv)
 {
 	struct kprobe_bpf *skel;
+=======
+int semid;
+int tgid_map_fd;
+int tid_map_fd;
+int nr_cpus;
+struct kprobe_bpf *skel;
+static struct bpf_object_open_opts open_opts = {.sz = sizeof(struct bpf_object_open_opts)};
+
+int main(int argc, char **argv)
+{
+	/*
+	** create the semaphore group and initialize it;
+	** if it already exists, verify if a netatop bpf 
+	** program is already running. And 
+	** 
+	*/
+	struct sembuf		semincr = {0, +1, SEM_UNDO};	
+	if ( (semid = semget(SEMAKEY, 0, 0)) >= 0)	// exists?
+	{
+		if ( semctl(semid, 0, GETVAL, 0) == 1)
+		{
+			fprintf(stderr, "Another netatop bpf program is already running!");
+			exit(3);
+		}
+	}
+	else
+	{
+		if ( (semid = semget(SEMAKEY, 2, 0600|IPC_CREAT|IPC_EXCL)) >= 0)
+		{
+			// Initialize the number of netatop bpf program
+			(void) semctl(semid, 0, SETVAL, 0);
+			// Initialize the number of atop Clients
+			(void) semctl(semid, 1, SETVAL, 0);
+		}
+		else
+		{
+			perror("cannot create semaphore");
+			exit(3);
+		}
+	}
+
+>>>>>>> eb484c2... fix
 	int err;
 	nr_cpus = libbpf_num_possible_cpus();
 
@@ -60,6 +99,7 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 
+<<<<<<< HEAD
 
 	if (signal(SIGINT, sig_int) == SIG_ERR) {
 		fprintf(stderr, "can't set signal handler: %s\n", strerror(errno));
@@ -67,6 +107,8 @@ int main(int argc, char **argv)
 		goto cleanup;
 	}
 
+=======
+>>>>>>> eb484c2... fix
 	// printf("Successfully started! Please run `sudo cat /sys/kernel/debug/tracing/trace_pipe` "
 	//        "to see output of the BPF programs.\n");
 
@@ -76,6 +118,18 @@ int main(int argc, char **argv)
 
 	if ( fork() )
 		exit(0);
+<<<<<<< HEAD
+=======
+	setsid();
+	/*
+	** raise semaphore to define a busy netatop
+	*/
+	if ( semop(semid, &semincr, 1) == -1)
+    {
+		printf("cannot increment semaphore\n");
+		exit(3);
+	}
+>>>>>>> eb484c2... fix
 
 	serv_listen();
 

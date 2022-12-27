@@ -24,10 +24,7 @@ void deal(int fd, struct netpertask *npt)
             return;
         }
     } else if (npt->type == 'd'){
-        // if (bpf_map_lookup_elem(tid_map_fd, &pid, stats) != 0) {
-        //     return;
-        // }
-        //遍历map 得到退出进程 写入文件
+        // traverse the map to get the exit process
         deal_exited_process(fd, npt);
         return;
     }
@@ -44,18 +41,40 @@ void deal(int fd, struct netpertask *npt)
     // printf("%c %llu %llu %ld %ld %ld %ld\n", npt->type, pid, npt->tc.tcpsndpacks, npt->tc.tcpsndbytes, npt->tc.tcprcvpacks, npt->tc.tcprcvbytes, npt->tc.udpsndpacks);
 }
 
+<<<<<<< HEAD
+=======
+// the number of clients connected to netatop server
+int client_num = 0;
+
+>>>>>>> eb484c2... fix
 void deal_exited_process(int fd, struct netpertask *npt)
 {
     unsigned long long lookup_key, next_key;
 
     struct taskcount *stats = calloc(nr_cpus, sizeof(struct taskcount));
 	lookup_key = 1;
+<<<<<<< HEAD
+=======
+
+>>>>>>> eb484c2... fix
     // delete exited process
     while(bpf_map_get_next_key(tgid_map_fd, &lookup_key, &next_key) == 0) {
         lookup_key = next_key;
         if(kill(next_key, 0) && errno == ESRCH) {
+<<<<<<< HEAD
             bpf_map_lookup_and_delete_elem(tgid_map_fd, &next_key, stats);
             // bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
+=======
+            client_num++;
+            // printf("client_num %d NUMCLIENTS %d\n", client_num, NUMCLIENTS);
+            if (NUMCLIENTS == client_num) {
+
+                bpf_map_lookup_and_delete_elem(tgid_map_fd, &next_key, stats);
+                client_num = 0;
+            } else {
+                bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
+            }
+>>>>>>> eb484c2... fix
 
             // printf("%-6d %-16lld %-6lld %-16lld %-6lld\n", next_key.pid, task_count_process.tcprcvpacks, task_count_process.tcprcvbytes, task_count_process.udprcvpacks, task_count_process.udprcvbytes);
 
@@ -90,7 +109,6 @@ void deal_exited_process(int fd, struct netpertask *npt)
             
             struct netpertask npt = {
                 .id = next_key,
-                // .command = 
                 .tc = data
             };
     
@@ -107,7 +125,6 @@ void deal_exited_process(int fd, struct netpertask *npt)
         lookup_key = next_key;
 
         if(kill(next_key, 0) && errno == ESRCH) {
-            // delete exited thread
             bpf_map_lookup_and_delete_elem(tid_map_fd, &next_key);
         }
     }

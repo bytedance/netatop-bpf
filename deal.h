@@ -2,9 +2,7 @@
 #define __DEAL__
 void deal(int, struct netpertask *);
 void deal_exited_process(int, struct netpertask *npt);
-int tgid_map_fd;
-int tid_map_fd;
-int nr_cpus;
-int histfd;
-struct naheader *nap;
+extern int tgid_map_fd;
+extern int tid_map_fd;
+extern int nr_cpus;
 #endif
