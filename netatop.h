@@ -28,6 +28,6 @@ struct netpertask {
 #define	NUMCLIENTS	(semctl(semid, 1, GETVAL, 0))
 #define SEMAKEY         1541962
 
-extern struct kprobe_bpf *skel;
+extern struct netatop_bpf *skel;
 extern int semid;
 #endif

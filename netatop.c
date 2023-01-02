@@ -12,7 +12,7 @@
 #include <sys/sem.h>
 #include <sys/resource.h>
 #include <bpf/libbpf.h>
-#include "kprobe.skel.h"
+#include "netatop.skel.h"
 #include "netatop.h"
 #include "server.h"
 #include "deal.h"
@@ -37,7 +37,7 @@ int semid;
 int tgid_map_fd;
 int tid_map_fd;
 int nr_cpus;
-struct kprobe_bpf *skel;
+struct netatop_bpf *skel;
 
 int main(int argc, char **argv)
 {
@@ -80,14 +80,14 @@ int main(int argc, char **argv)
 	libbpf_set_print(libbpf_print_fn);
 
 	/* Open load and verify BPF application */
-	skel = kprobe_bpf__open_and_load();
+	skel = netatop_bpf__open_and_load();
 	if (!skel) {
 		fprintf(stderr, "Failed to open BPF skeleton\n");
 		return 1;
 	}
 
 	/* Attach tracepoint handler */
-	// err = kprobe_bpf__attach(skel);
+	// err = netatop_bpf__attach(skel);
 	// if (err) {
 	// 	fprintf(stderr, "Failed to attach BPF skeleton\n");
 	// 	goto cleanup;
@@ -115,20 +115,20 @@ int main(int argc, char **argv)
 	serv_listen();
 
 cleanup:
-	kprobe_bpf__destroy(skel);
+	netatop_bpf__destroy(skel);
 	return -err;
 }
 
-void bpf_attach(struct kprobe_bpf *skel)
+void bpf_attach(struct netatop_bpf *skel)
 {
 	int err;
-	err = kprobe_bpf__attach(skel);
+	err = netatop_bpf__attach(skel);
 	if (err) {
 		fprintf(stderr, "Failed to attach BPF skeleton\n");
 	}
 }
 
-void bpf_destroy(struct kprobe_bpf *skel)
+void bpf_destroy(struct netatop_bpf *skel)
 {
 	if (!skel->skeleton)
 		return;

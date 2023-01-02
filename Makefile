@@ -19,8 +19,8 @@ INCLUDES := -I$(OUTPUT) -I../../libbpf/include/uapi -I$(dir $(VMLINUX))
 CFLAGS := -g -Wall
 ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS)
 
-# APPS = minimal minimal_legacy bootstrap uprobe kprobe fentry usdt sockfilter tc
-APPS = kprobe
+# APPS = minimal minimal_legacy bootstrap uprobe netatop fentry usdt sockfilter tc
+APPS = netatop
 
 CARGO ?= $(shell which cargo)
 ifeq ($(strip $(CARGO)),)
@@ -150,3 +150,16 @@ $(APPS): %: $(OUTPUT)/%.o ${OBJ1} ${OBJ2} $(LIBBPF_OBJ) | $(OUTPUT)
 
 # keep intermediate (.skel.h, .bpf.o, etc) targets
 .SECONDARY:
+
+install:	netatop
+		install netatop -t /usr/sbin
+		install -m 0644 netatop-bpf.service -t /lib/systemd/system
+
+		if [ -z "$(DESTDIR)" -a -f /bin/systemctl ]; 		\
+		then	/bin/systemctl disable --now atop     2> /dev/null; \
+			/bin/systemctl disable --now atopacct 2> /dev/null; \
+			/bin/systemctl daemon-reload;			\
+			/bin/systemctl enable  --now atopacct;		\
+			/bin/systemctl enable  --now atop;		\
+			/bin/systemctl enable  --now atop-rotate.timer;	\
+		fi
