@@ -25,13 +25,13 @@ static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va
 static volatile sig_atomic_t stop;
 
 
-struct taskcount value_zero = {
-	.tcpsndpacks = 0,
-	.tcpsndbytes = 0,
-	.tcprcvpacks = 0,
-	.tcprcvbytes = 0,
-	.udpsndpacks = 0
-};
+// struct taskcount value_zero = {
+// 	.tcpsndpacks = 0,
+// 	.tcpsndbytes = 0,
+// 	.tcprcvpacks = 0,
+// 	.tcprcvbytes = 0,
+// 	.udpsndpacks = 0
+// };
 
 int semid;
 int tgid_map_fd;
