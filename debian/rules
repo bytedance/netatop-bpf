@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+# You must remove unused comment lines for the released package.
+#export DH_VERBOSE = 1
+#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+#export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+#export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+%:
+	dh $@  
+
+override_dh_auto:
+	dh_auto_clean
+	rm -f debian/atop.service
+	rm -f debian/netatop-bpf
+
+override_dh_auto_install:
+	dh_auto_install 
+	make install DESTDIR=$(shell pwd)/debian/netatop-bpf
+	cp netatop-bpf.service debian/netatop-bpf.service
+
+#override_dh_install:
+#	dh_install --list-missing -X.pyc -X.pyo

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
 OUTPUT := .output
-CLANG ?= clang
-LLVM_STRIP ?= llvm-strip
+CLANG ?= clang-11
+LLVM_STRIP ?= llvm-strip-11
 LIBBPF_SRC := $(abspath libbpf/src)
 BPFTOOL_SRC := $(abspath bpftool/src)
 LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
@@ -19,9 +19,13 @@ INCLUDES := -I$(OUTPUT) -I../../libbpf/include/uapi -I$(dir $(VMLINUX))
 CFLAGS := -g -Wall
 ALL_LDFLAGS := $(LDFLAGS) $(EXTRA_LDFLAGS)
 
+DESTDIR  =
+SBINPATH = /usr/sbin
+SYSDPATH = /lib/systemd/system
+
 # APPS = minimal minimal_legacy bootstrap uprobe netatop fentry usdt sockfilter tc
 APPS = netatop
-
+ 
 CARGO ?= $(shell which cargo)
 ifeq ($(strip $(CARGO)),)
 BZS_APPS :=
@@ -151,15 +155,20 @@ $(APPS): %: $(OUTPUT)/%.o ${OBJ1} ${OBJ2} $(LIBBPF_OBJ) | $(OUTPUT)
 # keep intermediate (.skel.h, .bpf.o, etc) targets
 .SECONDARY:
 
-install:	netatop
-		install netatop -t /usr/sbin
-		install -m 0644 netatop-bpf.service -t /lib/systemd/system
+install:
+		if [ ! -d $(DESTDIR)$(SBINPATH) ]; 		\
+		then mkdir -p $(DESTDIR)$(SBINPATH); fi
+		if [ ! -d $(DESTDIR)$(SYSDPATH) ]; 			\
+		then	mkdir -p $(DESTDIR)$(SYSDPATH); fi
+
+		cp netatop-bpf.service $(DESTDIR)$(SYSDPATH)/netatop-bpf.service
+		chmod 0644             $(DESTDIR)$(SYSDPATH)/netatop-bpf.service
+		
+		cp netatop   		$(DESTDIR)$(SBINPATH)/netatop
+		chmod 0711 		$(DESTDIR)$(SBINPATH)/netatop
 
 		if [ -z "$(DESTDIR)" -a -f /bin/systemctl ]; 		\
-		then	/bin/systemctl disable --now atop     2> /dev/null; \
-			/bin/systemctl disable --now atopacct 2> /dev/null; \
+		then	/bin/systemctl disable --now netatop-bpf     2> /dev/null; \
 			/bin/systemctl daemon-reload;			\
-			/bin/systemctl enable  --now atopacct;		\
-			/bin/systemctl enable  --now atop;		\
-			/bin/systemctl enable  --now atop-rotate.timer;	\
+			/bin/systemctl enable  --now netatop-bpf;		\
 		fi
