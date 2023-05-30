@@ -21,11 +21,12 @@ void deal(int fd, struct netpertask *npt)
         //     return;
         // }
         deal_process(fd);
-    } else if (npt->type == 't'){
-        if (bpf_map_lookup_elem(tid_map_fd, &pid, stats) != 0) {
-            return;
-        }
     } 
+    // else if (npt->type == 't'){
+    //     if (bpf_map_lookup_elem(tid_map_fd, &pid, stats) != 0) {
+    //         return;
+    //     }
+    // } 
     // else if (npt->type == 'd'){
     //     // traverse the map to get the exit process
     //     deal_exited_process(fd, npt);
@@ -41,36 +42,42 @@ void deal(int fd, struct netpertask *npt)
         npt->tc.udprcvpacks += stats[i].udprcvpacks;
         npt->tc.udprcvbytes += stats[i].udprcvbytes;
     }
+
     // printf("%c %llu %llu %ld %ld %ld %ld\n", npt->type, pid, npt->tc.tcpsndpacks, npt->tc.tcpsndbytes, npt->tc.tcprcvpacks, npt->tc.tcprcvbytes, npt->tc.udpsndpacks);
 }
 
-// the number of clients connected to netatop server
-int client_num = 0;
+// the number of exited processes in the elapsed interval
+int exited_num = 0;
+unsigned long long exited_pid[40960];
 
 void deal_process(int fd)
 {
     struct netpertask npt;
     unsigned long long lookup_key, next_key;
+    
 
     struct taskcount *stats = calloc(nr_cpus, sizeof(struct taskcount));
 	lookup_key = 1;
 
+    // printf("exited %d\n", exited_num);
+    for (int i = 0; i < exited_num; i++) {
+         bpf_map_delete_elem(tgid_map_fd, &exited_pid[i]);
+    }
+    exited_num = 0;
     // delete exited process
     while(bpf_map_get_next_key(tgid_map_fd, &lookup_key, &next_key) == 0) {
         lookup_key = next_key;
-        if(kill(next_key, 0) && errno == ESRCH) {
-            client_num++;
-
+        bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
+        if (kill(next_key, 0) && errno == ESRCH && fd == client_flag ) {
+            exited_pid[exited_num++] = next_key;
+            // printf("exited_num %d %d\n", exited_num, next_key);
+            // bpf_map_delete_elem(tgid_map_fd, &next_key);
             // printf("client_num %d NUMCLIENTS %d\n", client_num, NUMCLIENTS);
-            if (NUMCLIENTS == client_num) {
-
-                bpf_map_lookup_and_delete_elem(tgid_map_fd, &next_key, stats);
-                client_num = 0;
-            } else {
-                bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
-            }
-        } else {
-            bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
+            // if (NUMCLIENTS >= client_num) {
+            //     bpf_map_lookup_and_delete_elem(tgid_map_fd, &next_key, stats);
+            // } else {
+            //     bpf_map_lookup_elem(tgid_map_fd, &next_key, stats);
+            // }
         }
 
         // printf("%-6d %-16lld %-6lld %-16lld %-6lld\n", next_key.pid, task_count_process.tcprcvpacks, task_count_process.tcprcvbytes, task_count_process.udprcvpacks, task_count_process.udprcvbytes);
@@ -125,3 +132,5 @@ void deal_process(int fd)
     //         bpf_map_lookup_and_delete_elem(tid_map_fd, &next_key);
     //     }
     // }
+
+

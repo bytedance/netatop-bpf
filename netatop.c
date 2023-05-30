@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 
 	// int tgid_map_fd= bpf_map__fd(skel->obj->map.task_net_stat);
 	tgid_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "tgid_net_stat");
-	tid_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "tid_net_stat");
+	// tid_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "tid_net_stat");
 
 	if ( fork() )
 		exit(0);

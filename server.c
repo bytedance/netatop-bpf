@@ -92,6 +92,7 @@ int serv_listen()
                     // If there is no client connection before new 
                     // connection, the bpf program will not be loaded.
                     bpf_attach(skel);
+                    client_flag = conn_fd;
                 }
                 struct sembuf	semincr = {1, +1, SEM_UNDO};
                 if ( semop(semid, &semincr, 1) == -1)
