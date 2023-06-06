@@ -1,9 +1,6 @@
 #ifndef __DEAL__
 #define __DEAL__
 void deal(int, struct netpertask *);
-void deal_exited_process(int, struct netpertask *npt);
+void deal_process(int);
 int client_flag;
-extern int tgid_map_fd;
-extern int tid_map_fd;
-extern int nr_cpus;
 #endif

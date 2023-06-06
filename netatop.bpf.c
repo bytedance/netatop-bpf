@@ -31,12 +31,12 @@ static __always_inline u64 current_tgid()
 	return tgid;
 }
 
-static __always_inline u64 current_tid()
-{
-	u64 tid = bpf_get_current_pid_tgid() & 0x00000000ffffffff;
-	// bpf_printk("bpf_get_current_tgid_tgid %d\n", tgid);
-	return tid;
-}
+// static __always_inline u64 current_tid()
+// {
+// 	u64 tid = bpf_get_current_pid_tgid() & 0x00000000ffffffff;
+// 	// bpf_printk("bpf_get_current_tgid_tgid %d\n", tgid);
+// 	return tid;
+// }
 
 SEC("raw_tracepoint/udp_send_length")
 int BPF_PROG(udp_send_length_k, struct sock *sk, int length, int error, int flags)
@@ -59,19 +59,19 @@ int BPF_PROG(udp_send_length_k, struct sock *sk, int length, int error, int flag
 		
 		long ret = bpf_map_update_elem(&tgid_net_stat, &tgid, &data, BPF_ANY);
 	}
-	u64 tid = current_tid();
-	stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
-	if (stat_tid) {
-		stat_tid->udpsndpacks++;
-		stat_tid->udpsndbytes += length;
-	} else {
-		struct taskcount data ={
-			.udpsndpacks = 1,
-			.udpsndbytes = length
-		};
+	// u64 tid = current_tid();
+	// stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
+	// if (stat_tid) {
+	// 	stat_tid->udpsndpacks++;
+	// 	stat_tid->udpsndbytes += length;
+	// } else {
+	// 	struct taskcount data ={
+	// 		.udpsndpacks = 1,
+	// 		.udpsndbytes = length
+	// 	};
 		
-		long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
-	}
+	// 	long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
+	// }
 	return 0;
 }
 
@@ -96,19 +96,19 @@ int BPF_PROG(udp_recv_length_k, struct sock *sk, int length, int error, int flag
 		
 		long ret = bpf_map_update_elem(&tgid_net_stat, &tgid, &data, BPF_ANY);
 	}
-	u64 tid = current_tid();
-	stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
-	if (stat_tid) {
-		stat_tid->udprcvpacks++;
-		stat_tid->udprcvbytes += length;
-	} else {
-		struct taskcount data ={
-			.udprcvpacks = 1,
-			.udprcvbytes = length
-		};
+	// u64 tid = current_tid();
+	// stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
+	// if (stat_tid) {
+	// 	stat_tid->udprcvpacks++;
+	// 	stat_tid->udprcvbytes += length;
+	// } else {
+	// 	struct taskcount data ={
+	// 		.udprcvpacks = 1,
+	// 		.udprcvbytes = length
+	// 	};
 		
-		long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
-	}
+	// 	long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
+	// }
 	return 0;
 }
 
@@ -134,19 +134,19 @@ int BPF_PROG(tcp_send_length_k, struct sock *sk, int length, int error, int flag
 		
 		long ret = bpf_map_update_elem(&tgid_net_stat, &tgid, &data, BPF_ANY);
 	}
-	u64 tid = current_tid(); 
-	stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
-	if (stat_tid) {
-		stat_tid->tcpsndpacks++;
-		stat_tid->tcpsndbytes += length;
-	} else {
-		struct taskcount data ={
-			.tcpsndpacks = 1,
-			.tcpsndbytes = length
-		};
+	// u64 tid = current_tid(); 
+	// stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
+	// if (stat_tid) {
+	// 	stat_tid->tcpsndpacks++;
+	// 	stat_tid->tcpsndbytes += length;
+	// } else {
+	// 	struct taskcount data ={
+	// 		.tcpsndpacks = 1,
+	// 		.tcpsndbytes = length
+	// 	};
 		
-		long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
-	}
+	// 	long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
+	// }
 	return 0;
 }
 
@@ -160,9 +160,9 @@ int BPF_PROG(tcp_recv_length_k, void *sk, int length, int error, int flags)
 		return 0;
 
 	u64 tgid = current_tgid();
-	u64 tid = current_tid();
+	// u64 tid = current_tid();
 	stat_tgid = bpf_map_lookup_elem(&tgid_net_stat, &tgid);
-	stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
+	// stat_tid = bpf_map_lookup_elem(&tid_net_stat, &tid);
 
 	if (stat_tgid) {
 		stat_tgid->tcprcvpacks++;
@@ -178,17 +178,17 @@ int BPF_PROG(tcp_recv_length_k, void *sk, int length, int error, int flags)
 		// bpf_printk("bpf_map_update_elem %d %d\n", data.tcprcvpacks, data.tcprcvbytes);
 	}
 
-	if (stat_tid) {
-		stat_tid->tcprcvpacks++;
-		stat_tid->tcprcvbytes += length;
-		// bpf_printk("current_tidtttttttt %llu %d %d\n", tid, stat_tid->tcprcvpacks, stat_tid->tcprcvbytes);
-	} else {
-		struct taskcount data ={
-			.tcprcvpacks = 1,
-			.tcprcvbytes = length
-		};
-		long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
-	}
+	// if (stat_tid) {
+	// 	stat_tid->tcprcvpacks++;
+	// 	stat_tid->tcprcvbytes += length;
+	// 	// bpf_printk("current_tidtttttttt %llu %d %d\n", tid, stat_tid->tcprcvpacks, stat_tid->tcprcvbytes);
+	// } else {
+	// 	struct taskcount data ={
+	// 		.tcprcvpacks = 1,
+	// 		.tcprcvbytes = length
+	// 	};
+	// 	long ret = bpf_map_update_elem(&tid_net_stat, &tid, &data, BPF_ANY);
+	// }
 	return 0;
 }
 

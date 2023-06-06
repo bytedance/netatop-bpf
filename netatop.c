@@ -24,21 +24,6 @@ static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va
 
 static volatile sig_atomic_t stop;
 
-
-// struct taskcount value_zero = {
-// 	.tcpsndpacks = 0,
-// 	.tcpsndbytes = 0,
-// 	.tcprcvpacks = 0,
-// 	.tcprcvbytes = 0,
-// 	.udpsndpacks = 0
-// };
-
-int semid;
-int tgid_map_fd;
-int tid_map_fd;
-int nr_cpus;
-struct netatop_bpf *skel;
-
 int main(int argc, char **argv)
 {
 	/*
@@ -72,7 +57,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	int err;
 	nr_cpus = libbpf_num_possible_cpus();
 
 	libbpf_set_strict_mode(LIBBPF_STRICT_ALL);
@@ -86,37 +70,23 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/* Attach tracepoint handler */
-	// err = netatop_bpf__attach(skel);
-	// if (err) {
-	// 	fprintf(stderr, "Failed to attach BPF skeleton\n");
-	// 	goto cleanup;
-	// }
-
-	// printf("Successfully started! Please run `sudo cat /sys/kernel/debug/tracing/trace_pipe` "
-	//        "to see output of the BPF programs.\n");
-
-	// int tgid_map_fd= bpf_map__fd(skel->obj->map.task_net_stat);
 	tgid_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "tgid_net_stat");
 	// tid_map_fd = bpf_object__find_map_fd_by_name(skel->obj, "tid_net_stat");
 
 	if ( fork() )
 		exit(0);
 	setsid();
+
 	/*
 	** raise semaphore to define a busy netatop
 	*/
 	if ( semop(semid, &semincr, 1) == -1)
-    {
+	{
 		printf("cannot increment semaphore\n");
 		exit(3);
 	}
 
 	serv_listen();
-
-cleanup:
-	netatop_bpf__destroy(skel);
-	return -err;
 }
 
 void bpf_attach(struct netatop_bpf *skel)
@@ -125,6 +95,7 @@ void bpf_attach(struct netatop_bpf *skel)
 	err = netatop_bpf__attach(skel);
 	if (err) {
 		fprintf(stderr, "Failed to attach BPF skeleton\n");
+		cleanup(skel);
 	}
 }
 
@@ -134,6 +105,9 @@ void bpf_destroy(struct netatop_bpf *skel)
 		return;
 	if (skel->skeleton->progs)
 		bpf_object__detach_skeleton(skel->skeleton);
-	// if (skel->skeleton->obj)
-	// 	bpf_object__close(*skel->skeleton->obj);
+}
+
+void cleanup(struct netatop_bpf *skel)
+{
+	netatop_bpf__destroy(skel);
 }

@@ -1,6 +1,5 @@
 #ifndef __NETATOP__
 #define __NETATOP__
-
 struct taskcount {
 	unsigned long long	tcpsndpacks;
 	unsigned long long	tcpsndbytes;
@@ -19,15 +18,19 @@ struct taskcount {
 struct netpertask {
 	char type; 	// tgid or tid or
 	pid_t			id;	// tgid or tid (depending on command)
-	unsigned long		btime;
-	char			command[COMLEN];
-
 	struct taskcount	tc;
 };
+
+struct netatop_bpf *skel;
+int semid;
+int tgid_map_fd;
+int tid_map_fd;
+int nr_cpus;
 
 #define	NUMCLIENTS	(semctl(semid, 1, GETVAL, 0))
 #define SEMAKEY         1541962
 
-extern struct netatop_bpf *skel;
-extern int semid;
+void bpf_attach(struct netatop_bpf *);
+void bpf_destroy(struct netatop_bpf *);
+void cleanup(struct netatop_bpf *);
 #endif

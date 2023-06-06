@@ -131,13 +131,10 @@ OBJ1 := $(OUTPUT)/server.o
 OBJ2 := $(OUTPUT)/deal.o
 
 ${OBJ1}: server.c server.h
-	@echo "============开始编译============"
 	$(CC) -c server.c -o ${OBJ1}
 	
 ${OBJ2}: deal.c deal.h
-	@echo "============开始编译============"
 	$(CC) -c deal.c -o ${OBJ2}
-
 
 # Build application binary
 $(APPS): %: $(OUTPUT)/%.o ${OBJ1} ${OBJ2} $(LIBBPF_OBJ) | $(OUTPUT) 

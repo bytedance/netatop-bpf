@@ -33,7 +33,7 @@ int serv_listen()
 {
     int            sock_fd, len, err, rval;
     struct sockaddr_un    un, cli_un;
-	char *name = NETATOP_SOCKET;
+    char *name = NETATOP_SOCKET;
     
     /* create a UNIX domain stream socket */
     if((sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
@@ -64,8 +64,8 @@ int serv_listen()
         goto errout;
     }
 
-	struct epoll_event ev, events[1000];
-	int epoll_fd = epoll_create(10000);   /* create an epoll handle */
+    struct epoll_event ev, events[1000];
+    int epoll_fd = epoll_create(10000);   /* create an epoll handle */
     ev.data.fd = sock_fd;   /* set fd associated with the event to be processed */
     ev.events = EPOLLIN;    /* set the type of event to handle */
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock_fd, &ev); /* register epoll events */
@@ -77,11 +77,11 @@ int serv_listen()
         {
             if (events[i].data.fd == sock_fd) // new client
             {
-				len = sizeof(un);
-				int conn_fd;
-				if((conn_fd = accept(sock_fd, (struct sockaddr *)&cli_un, &len)) < 0)
-					return(-5);    
-				ev.data.fd = conn_fd;
+                len = sizeof(un);
+                int conn_fd;
+                if((conn_fd = accept(sock_fd, (struct sockaddr *)&cli_un, &len)) < 0)
+                    return(-5);
+                ev.data.fd = conn_fd;
                 ev.events = EPOLLIN;
                 epoll_ctl(epoll_fd, EPOLL_CTL_ADD, conn_fd, &ev);
                 
@@ -94,14 +94,12 @@ int serv_listen()
                     bpf_attach(skel);
                     client_flag = conn_fd;
                 }
-                struct sembuf	semincr = {1, +1, SEM_UNDO};
+                struct sembuf semincr = {1, +1, SEM_UNDO};
                 if ( semop(semid, &semincr, 1) == -1)
                 {
                     printf("cannot increment semaphore\n");
                     exit(3);
                 }
-                // num = semctl(semid, 1, GETVAL, 0);
-                // printf("num %d\n", num);
             }
             else if (events[i].events & EPOLLIN)
             {
@@ -136,6 +134,5 @@ int serv_listen()
 errout:
     err = errno;
     close(sock_fd);
-    errno = err;
     return(rval);
 }
