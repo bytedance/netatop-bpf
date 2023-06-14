@@ -7,9 +7,9 @@ BPFTOOL_SRC := $(abspath bpftool/src)
 LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
 BPFTOOL_OUTPUT ?= $(abspath $(OUTPUT)/bpftool)
 BPFTOOL ?= $(BPFTOOL_OUTPUT)/bootstrap/bpftool
-LIBBLAZESYM_SRC := $(abspath blazesym/)
-LIBBLAZESYM_OBJ := $(abspath $(OUTPUT)/libblazesym.a)
-LIBBLAZESYM_HEADER := $(abspath $(OUTPUT)/blazesym.h)
+# LIBBLAZESYM_SRC := $(abspath blazesym/)
+# LIBBLAZESYM_OBJ := $(abspath $(OUTPUT)/libblazesym.a)
+# LIBBLAZESYM_HEADER := $(abspath $(OUTPUT)/blazesym.h)
 ARCH := $(shell uname -m | sed 's/x86_64/x86/' | sed 's/aarch64/arm64/' | sed 's/ppc64le/powerpc/' | sed 's/mips.*/mips/')
 VMLINUX := vmlinux/$(ARCH)/vmlinux.h
 # Use our own libbpf API headers and Linux UAPI headers distributed with
@@ -26,15 +26,15 @@ SYSDPATH = /lib/systemd/system
 # APPS = minimal minimal_legacy bootstrap uprobe netatop fentry usdt sockfilter tc
 APPS = netatop
  
-CARGO ?= $(shell which cargo)
-ifeq ($(strip $(CARGO)),)
-BZS_APPS :=
-else
-BZS_APPS := profile
-APPS += $(BZS_APPS)
-# Required by libblazesym
-ALL_LDFLAGS += -lrt -ldl -lpthread -lm
-endif
+# CARGO ?= $(shell which cargo)
+# ifeq ($(strip $(CARGO)),)
+# BZS_APPS :=
+# else
+# BZS_APPS := profile
+# APPS += $(BZS_APPS)
+# # Required by libblazesym
+# ALL_LDFLAGS += -lrt -ldl -lpthread -lm
+# endif
 
 # Get Clang's default includes on this system. We'll explicitly add these dirs
 # to the includes list when compiling with `-target bpf` because otherwise some
@@ -74,7 +74,7 @@ all: $(APPS)
 .PHONY: clean
 clean:
 	$(call msg,CLEAN)
-	$(Q)rm -rf $(OUTPUT) $(APPS)
+	$(Q)rm -rf $(OUTPUT) netatop
 
 $(OUTPUT) $(OUTPUT)/libbpf $(BPFTOOL_OUTPUT):
 	$(call msg,MKDIR,$@)
@@ -94,16 +94,16 @@ $(BPFTOOL): | $(BPFTOOL_OUTPUT)
 	$(Q)$(MAKE) ARCH= CROSS_COMPILE= OUTPUT=$(BPFTOOL_OUTPUT)/ -C $(BPFTOOL_SRC) bootstrap
 
 
-$(LIBBLAZESYM_SRC)/target/release/libblazesym.a::
-	$(Q)cd $(LIBBLAZESYM_SRC) && $(CARGO) build --features=cheader --release
+# $(LIBBLAZESYM_SRC)/target/release/libblazesym.a::
+# 	$(Q)cd $(LIBBLAZESYM_SRC) && $(CARGO) build --features=cheader --release
 
-$(LIBBLAZESYM_OBJ): $(LIBBLAZESYM_SRC)/target/release/libblazesym.a | $(OUTPUT)
-	$(call msg,LIB, $@)
-	$(Q)cp $(LIBBLAZESYM_SRC)/target/release/libblazesym.a $@
+# $(LIBBLAZESYM_OBJ): $(LIBBLAZESYM_SRC)/target/release/libblazesym.a | $(OUTPUT)
+# 	$(call msg,LIB, $@)
+# 	$(Q)cp $(LIBBLAZESYM_SRC)/target/release/libblazesym.a $@
 
-$(LIBBLAZESYM_HEADER): $(LIBBLAZESYM_SRC)/target/release/libblazesym.a | $(OUTPUT)
-	$(call msg,LIB,$@)
-	$(Q)cp $(LIBBLAZESYM_SRC)/target/release/blazesym.h $@
+# $(LIBBLAZESYM_HEADER): $(LIBBLAZESYM_SRC)/target/release/libblazesym.a | $(OUTPUT)
+# 	$(call msg,LIB,$@)
+# 	$(Q)cp $(LIBBLAZESYM_SRC)/target/release/blazesym.h $@
 
 # Build BPF code
 $(OUTPUT)/%.bpf.o: %.bpf.c $(LIBBPF_OBJ) $(wildcard %.h) $(VMLINUX) | $(OUTPUT)
@@ -123,9 +123,9 @@ $(OUTPUT)/%.o: %.c $(wildcard %.h) | $(OUTPUT)
 	$(call msg,CC,$@)
 	$(Q)$(CC) $(CFLAGS) $(INCLUDES) -c $(filter %.c,$^) -o $@
 
-$(patsubst %,$(OUTPUT)/%.o,$(BZS_APPS)): $(LIBBLAZESYM_HEADER)
+$(patsubst %,$(OUTPUT)/%.o,$(APPS)): $(LIBBLAZESYM_HEADER)
 
-$(BZS_APPS): $(LIBBLAZESYM_OBJ)
+# $(BZS_APPS): $(LIBBLAZESYM_OBJ)
 
 OBJ1 := $(OUTPUT)/server.o
 OBJ2 := $(OUTPUT)/deal.o
