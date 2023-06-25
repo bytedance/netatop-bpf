@@ -21,11 +21,11 @@ struct netpertask {
 	struct taskcount	tc;
 };
 
-struct netatop_bpf *skel;
-int semid;
-int tgid_map_fd;
-int tid_map_fd;
-int nr_cpus;
+extern struct netatop_bpf *skel;
+extern int semid;
+extern int tgid_map_fd;
+extern int tid_map_fd;
+extern int nr_cpus;
 
 #define	NUMCLIENTS	(semctl(semid, 1, GETVAL, 0))
 #define SEMAKEY         1541962

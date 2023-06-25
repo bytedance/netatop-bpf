@@ -23,6 +23,12 @@ static int libbpf_print_fn(enum libbpf_print_level level, const char *format, va
 }
 
 static volatile sig_atomic_t stop;
+struct netatop_bpf *skel;
+int semid;
+int tgid_map_fd;
+int tid_map_fd;
+int nr_cpus;
+
 
 int main(int argc, char **argv)
 {
