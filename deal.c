@@ -25,6 +25,7 @@ void deal(int fd, struct netpertask *npt)
 */
 int exited_num = 0;
 unsigned long long exited_pid[40960];
+int client_flag;
 
 void deal_process(int fd)
 {

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: (LGPL-2.1 OR BSD-2-Clause)
 OUTPUT := .output
-CLANG ?= clang-11
-LLVM_STRIP ?= llvm-strip-11
+CLANG ?= clang
+LLVM_STRIP ?= llvm-strip
 LIBBPF_SRC := $(abspath libbpf/src)
 BPFTOOL_SRC := $(abspath bpftool/src)
 LIBBPF_OBJ := $(abspath $(OUTPUT)/libbpf.a)
