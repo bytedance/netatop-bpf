@@ -1,5 +1,4 @@
 # netatop-bpf
-Created/maintained by liuting
 ## Introduction
 The Linux kernel does not maintain counters for the number of network accesses issued per process. As a consequence, it is not possible to analyze which process causes most load in case that atop shows a high utilization on one of your network interfaces.(For performance reasons, threads are not counted.)
 
