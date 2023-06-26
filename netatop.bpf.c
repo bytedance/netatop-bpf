@@ -48,7 +48,7 @@ struct sock_msg_length_args {
 	int flags;
 };
 
-SEC("tracepoint/sock/sock_sendmsg_length")
+SEC("tracepoint/sock/sock_send_length")
 int handle_tp_send(struct sock_msg_length_args *ctx)
 {
 	struct taskcount *stat_tgid, *stat_tid;
@@ -95,7 +95,7 @@ int handle_tp_send(struct sock_msg_length_args *ctx)
 	return 0;
 }
 
-SEC("tracepoint/sock/sock_recvmsg_length")
+SEC("tracepoint/sock/sock_recv_length")
 int handle_tp_recv(struct sock_msg_length_args *ctx)
 {
 	struct taskcount *stat_tgid, *stat_tid;
