@@ -13,14 +13,26 @@ Netatop runs normally and it has two functions. One is responsible for loading t
 
 Atop send to netatop every interval(default 10s), netatop recv from atop and then traverses the bpf map sending all process information to atop, atop uses the hash table to store the information of all processes, and then traverses the /proc file (exits the process) to obtain the pid of the process and find the hashmap.
 
+## Building
+netatop supports kernel version >= 6.3
+### Install Dependencies
+You will need clang (at least v11 or later), libelf and zlib to build the examples, package names may vary across distros.
 
-## How to use
+On Debian/Ubuntu, you need:
 ```
-// netatop-bpf
-git clone --recurse-submodules https://github.com/bytedance/netatop-bpf.git 
-cd netatop-bpf; make & make install
+$ apt install clang libelf1 libelf-dev zlib1g-dev
+```
+### Getting the source code
+Download the git repository and check out submodules:
+```
+git clone --recurse-submodules git@github.com:bytedance/netatop-bpf.git
+```
 
-// atop
-git clone  https://github.com/bytedance/atop.git -b netatop-bpf
-cd atop; make & make install
+C Examples
+Makefile build:
+```
+$ cd netatop-bpf
+$ git submodule update --init --recursive       # check out libbpf
+$ make
+$ make install
 ```
