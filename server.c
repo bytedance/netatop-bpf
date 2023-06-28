@@ -156,7 +156,9 @@ int serv_listen()
                     }
                     continue;
                 } 
-                deal(events[i].data.fd, &npt);
+                // deal(events[i].data.fd, &npt);
+                deal_process(events[i].data.fd);
+                npt.id = 0;
                 send(events[i].data.fd, &npt, sizeof(npt), 0);
             }
         }

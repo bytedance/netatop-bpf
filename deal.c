@@ -9,17 +9,17 @@
 #include "netatop.h"
 #include "deal.h"
 
-void deal(int fd, struct netpertask *npt)
-{
-    if (npt->type == 'g') { 
-        deal_process(fd);
-    } 
-    // else if (npt->type == 't'){
-    //     if (bpf_map_lookup_elem(tid_map_fd, &pid, stats) != 0) {
-    //         return;
-    //     }
-    // } 
-}
+// void deal(int fd, struct netpertask *npt)
+// {
+//     if (npt->type == 'g') { 
+//         deal_process(fd);
+//     } 
+//     // else if (npt->type == 't'){
+//     //     if (bpf_map_lookup_elem(tid_map_fd, &pid, stats) != 0) {
+//     //         return;
+//     //     }
+//     // } 
+// }
 /*
  * the number of exited processes in the elapsed interval
 */

@@ -15,9 +15,17 @@ struct taskcount {
 };
 #define	COMLEN	16
 
+// struct netpertask {
+// 	char type; 	// tgid or tid or
+// 	pid_t			id;	// tgid or tid (depending on command)
+// 	struct taskcount	tc;
+// };
+
 struct netpertask {
-	char type; 	// tgid or tid or
 	pid_t			id;	// tgid or tid (depending on command)
+	unsigned long		btime;
+	char			command[COMLEN];
+
 	struct taskcount	tc;
 };
 
