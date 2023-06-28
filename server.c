@@ -26,6 +26,18 @@
 #include "netatop.h"
 #include "deal.h"
 
+int cleanup_and_go = 0;
+
+/*
+** signal catchers:
+**    set flag to be verified in main loop to cleanup and terminate
+*/
+static void
+cleanup_flag(int sig)
+{
+	cleanup_and_go = sig;
+}
+
 /*
 * Create a server endpoint of a connection.
 */
@@ -64,13 +76,33 @@ int serv_listen()
         goto errout;
     }
 
+    struct sigaction	sigcleanup;
+
+	/*
+ 	** prepare cleanup signal handler
+	*/
+	memset(&sigcleanup, 0, sizeof sigcleanup);
+	sigemptyset(&sigcleanup.sa_mask);
+	sigcleanup.sa_handler	= cleanup_flag;
+	(void) sigaction(SIGTERM, &sigcleanup, (struct sigaction *)0);
+
+    /*
+	** signal handling
+	*/
+	(void) signal(SIGHUP, SIG_IGN);
+
+	(void) sigaction(SIGINT,  &sigcleanup, (struct sigaction *)0);
+	(void) sigaction(SIGQUIT, &sigcleanup, (struct sigaction *)0);
+	(void) sigaction(SIGTERM, &sigcleanup, (struct sigaction *)0);
+
+
     struct epoll_event ev, events[1000];
     int epoll_fd = epoll_create(10000);   /* create an epoll handle */
     ev.data.fd = sock_fd;   /* set fd associated with the event to be processed */
     ev.events = EPOLLIN;    /* set the type of event to handle */
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock_fd, &ev); /* register epoll events */
    
-    while(1)
+    while(! cleanup_and_go)
     {
         int fd_num = epoll_wait(epoll_fd, events, 10000, 1000);
         for (int i = 0; i < fd_num; i++)
@@ -130,9 +162,12 @@ int serv_listen()
         }
     }
 
+    // delete NETATOP_SOCKET
+    unlink(name);
 
 errout:
     err = errno;
     close(sock_fd);
+    close(epoll_fd);
     return(rval);
 }
